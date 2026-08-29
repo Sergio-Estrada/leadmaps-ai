@@ -183,17 +183,11 @@ function consultarEstrategiaLead(nombreNegocio, tieneWeb) {
 async function ejecutarLlamadaGemini(prompt) {
     agregarMensajeIA("⏳ <em>Gemini está redactando la propuesta...</em>", "msg-temp");
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`;
-
     try {
-        const response = await fetch(endpoint, {
+        const response = await fetch('/api/gemini', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{ text: `Eres un consultor experto en ventas B2B. Responde de forma ejecutiva: ${prompt}` }]
-                }]
-            })
+            body: JSON.stringify({ prompt: prompt })
         });
 
         const tempMsg = document.querySelector(".msg-temp");
@@ -202,22 +196,20 @@ async function ejecutarLlamadaGemini(prompt) {
         const data = await response.json();
 
         if (data.error) {
-            agregarMensajeIA(`⚠️ Error de Google AI Studio: ${data.error.message}`);
+            agregarMensajeIA(`⚠️ Error de autenticación/API: ${data.error}`);
             return;
         }
 
-        const respuestaTexto = data.candidates[0].content.parts[0].text;
-        agregarMensajeIA(respuestaTexto);
-        reproducirVoz(respuestaTexto);
+        agregarMensajeIA(data.respuesta);
+        reproducirVoz(data.respuesta);
 
     } catch (error) {
         console.error("Error Fetch:", error);
         const tempMsg = document.querySelector(".msg-temp");
         if (tempMsg) tempMsg.remove();
-        agregarMensajeIA("⚠️ Error de conexión con la API de Gemini.");
+        agregarMensajeIA("⚠️ Error de conexión con el servidor intermedio.");
     }
 }
-
 function reproducirVoz(texto) {
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
