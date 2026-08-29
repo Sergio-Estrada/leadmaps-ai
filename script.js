@@ -17,9 +17,19 @@ function guardarApiKey() {
         alert("Por favor pega una API Key válida.");
         return;
     }
-    localStorage.setItem("gemini_api_key", key);
-    alert("API Key guardada con éxito en el navegador.");
-    document.getElementById("status").innerText = "✅ API Key guardada correctamente.";
+    let leadsProcesados = [];
+const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let reconocedor;
+
+// Al cargar la página, recuperar la API Key si existe
+window.addEventListener("DOMContentLoaded", () => {
+    // CORRECCIÓN AQUÍ: Usar localStorage con 'l' minúscula
+    const savedKey = localStorage.getItem("gemini_api_key"); 
+    if (savedKey) {
+        document.getElementById("apiKey").value = savedKey;
+        document.getElementById("status").innerText = "✅ API Key cargada. Listo para buscar y consultar.";
+    }
+});
 }
 
 // Reconocimiento de Voz
