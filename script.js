@@ -163,7 +163,7 @@ function renderizarTarjetas() {
     });
 }
 
-// Comunicación con Gemini API
+// Comunicación con Gemini API (Modelo 3.6 Flash)
 function enviarAGeminiManual() {
     const input = document.getElementById("preguntaAgente");
     const texto = input.value.trim();
@@ -193,7 +193,8 @@ async function ejecutarLlamadaGemini(prompt) {
 
     agregarMensajeIA("⏳ <em>Gemini está redactando la propuesta...</em>", "msg-temp");
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    // Endpoint actualizado a gemini-3.6-flash
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
 
     try {
         const response = await fetch(endpoint, {
