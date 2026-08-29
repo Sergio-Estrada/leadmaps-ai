@@ -1,0 +1,39 @@
+// api/gemini.js
+export default async function handler(req, res) {
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Método no permitido' });
+    }
+
+    const { prompt } = req.body;
+    const apiKey = process.env.GEMINI_API_KEY; // Se lee de forma segura desde las variables de entorno
+
+    if (!apiKey) {
+        return res.status(500).json({ error: 'La API Key no está configurada en el servidor.' });
+    }
+
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+    try {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{ text: `Eres un consultor experto en ventas B2B. Responde de forma ejecutiva: ${prompt}` }]
+                }]
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            return res.status(400).json({ error: data.error.message });
+        }
+
+        const respuestaTexto = data.candidates[0].content.parts[0].text;
+        return res.status(200).json({ respuesta: respuestaTexto });
+
+    } catch (error) {
+        return res.status(500).json({ error: 'Error interno de conexión con Gemini' });
+    }
+}
