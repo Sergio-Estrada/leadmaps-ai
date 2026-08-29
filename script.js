@@ -182,32 +182,52 @@ function consultarEstrategiaLead(nombreNegocio, tieneWeb) {
 
 // Función principal de conexión con Gemini API
 async function ejecutarLlamadaGemini(prompt) {
+    // 1. Obtener la clave desde el input o el almacenamiento local
     const apiKey = document.getElementById("apiKey").value.trim() || localStorage.getItem("gemini_api_key");
 
     if (!apiKey) {
-        agregarMensajeIA("⚠️ Falta la API Key de Gemini. Ingrésala en el panel izquierdo y haz clic en 'Guardar Key'.");
+        agregarMensajeIA("⚠️ No se encontró la API Key. Por favor ingresa una clave válida y haz clic en Guardar.");
         return;
     }
 
+    // 2. Endpoint oficial del modelo Gemini 2.5 Flash
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
     try {
+        // 3. Petición HTTP POST estructurada
         const response = await fetch(endpoint, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json' 
+            },
             body: JSON.stringify({
                 contents: [{
-                    parts: [{ text: `Eres un consultor experto en ventas B2B. Responde al usuario de forma clara, directa y estructurada: ${prompt}` }]
+                    parts: [{ 
+                        text: `Eres un consultor experto en ventas B2B. Responde de forma clara y directa: ${prompt}` 
+                    }]
                 }]
             })
         });
 
+        // 4. Decodificación de la respuesta JSON
         const data = await response.json();
 
+        // 5. Manejo de errores devueltos por Google AI Studio (ej. clave inválida, cuota superada)
         if (data.error) {
             agregarMensajeIA(`⚠️ Error de Google AI Studio: ${data.error.message}`);
             return;
         }
+
+        // 6. Extracción del texto generado y emisión por voz/pantalla
+        const respuestaTexto = data.candidates[0].content.parts[0].text;
+        agregarMensajeIA(respuestaTexto);
+        reproducirVoz(respuestaTexto);
+
+    } catch (error) {
+        console.error("Error en Fetch Gemini:", error);
+        agregarMensajeIA("⚠️ Error de conexión de red al intentar contactar a Gemini.");
+    }
+}
 
         const respuestaTexto = data.candidates[0].content.parts[0].text;
         agregarMensajeIA(respuestaTexto);
