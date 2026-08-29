@@ -15,16 +15,9 @@
         </div>
     </header>
 
-    <main class="layout">
-        <section class="panel-busqueda">
+<section class="panel-busqueda">
             <h2>🔎 Configuración y Búsqueda</h2>
             <div class="grupo-input">
-                <label for="apiKey">Gemini API Key:</label>
-                <input type="password" id="apiKey" placeholder="Pega tu API Key de AI Studio">
-                <button onclick="guardarApiKey()" class="btn-secundario">💾 Guardar Key</button>
-                
-                <hr>
-
                 <label for="ciudad">Ubicación / Ciudad:</label>
                 <input type="text" id="ciudad" placeholder="Ej: Tijuana, Tecate, CDMX">
                 
@@ -39,7 +32,7 @@
                 
                 <button onclick="generarLeads()">🚀 Buscar Prospectos</button>
             </div>
-            <div id="status" class="status-box">Ingresa tu API Key y presiona Guardar Key para activar a Gemini.</div>
+            <div id="status" class="status-box">Sistema conectado a Gemini. Listo para buscar.</div>
         </section>
 
         <section class="resultados">
