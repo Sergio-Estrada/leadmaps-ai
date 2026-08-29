@@ -13,17 +13,16 @@
         <p>Buscador de Leads Premium en Google Maps con Asistente Gurú de IA</p>
     </header>
 
-    <main class="layout">
-        <section class="panel-busqueda">
-            <h2>🔎 Escáner de Google Maps</h2>
-            <div class="grupo-input">
-                <input type="text" id="apiKey" placeholder="Tu Google Places API Key">
-                <input type="text" id="ciudad" placeholder="Ej: Ciudad de Mexico">
-                <input type="text" id="categoria" placeholder="Ej: Dentistas, Restaurantes, Talleres">
-                <button onclick="buscarLeadsReales()">Buscar Leads Reales</button>
-            </div>
-            <div id="status" class="status-box">Listo para escanear...</div>
-        </section>
+    <!-- Panel de Búsqueda Intuitivo -->
+<section class="panel-busqueda">
+    <h2>🔎 Escáner de Leads Libres</h2>
+    <div class="grupo-input">
+        <input type="text" id="ciudad" placeholder="Ej: Tijuana, Tecate, CDMX">
+        <input type="text" id="categoria" placeholder="Ej: Talleres, Restaurantes, Dentistas">
+        <button onclick="buscarLeadsReales()">Buscar Leads Reales</button>
+    </div>
+    <div id="status" class="status-box">Listo para escanear sin API Key...</div>
+</section>
 
         <section class="resultados">
             <h2>🎯 Leads Premium Encontrados</h2>
