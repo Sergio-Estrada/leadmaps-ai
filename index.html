@@ -3,41 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LeadHunter AI - Prospectador Premium</title>
+    <title>LeadHunter AI - Prospectador Premium & Agente Inteligente</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <header>
-        <h1>⚡ LeadHunter AI</h1>
-        <p>Buscador de Leads Premium en Google Maps con Asistente Gurú de IA</p>
+        <div class="header-content">
+            <h1>⚡ LeadHunter AI</h1>
+            <p>Buscador de Leads Premium en Mapas Libres & Agente de IA Multitarea</p>
+        </div>
     </header>
 
-    <!-- Panel de Búsqueda Intuitivo -->
-<section class="panel-busqueda">
-    <h2>🔎 Escáner de Leads Libres</h2>
-    <div class="grupo-input">
-        <input type="text" id="ciudad" placeholder="Ej: Tijuana, Tecate, CDMX">
-        <input type="text" id="categoria" placeholder="Ej: Talleres, Restaurantes, Dentistas">
-        <button onclick="buscarLeadsReales()">Buscar Leads Reales</button>
-    </div>
-    <div id="status" class="status-box">Listo para escanear sin API Key...</div>
-</section>
+    <main class="layout">
+        <!-- Panel de Búsqueda Intuitivo -->
+        <section class="panel-busqueda">
+            <h2>🔎 Escáner de Leads Libres</h2>
+            <div class="grupo-input">
+                <label for="ciudad">Ubicación / Ciudad:</label>
+                <input type="text" id="ciudad" placeholder="Ej: Tijuana, Tecate, CDMX">
+                
+                <label for="categoria">Categoría Comercial:</label>
+                <input type="text" id="categoria" placeholder="Ej: Talleres, Restaurantes, Dentistas">
+                
+                <button onclick="buscarLeadsReales()">🚀 Buscar Leads Reales</button>
+            </div>
+            <div id="status" class="status-box">Listo para escanear de forma nativa sin API Key...</div>
+        </section>
 
+        <!-- Resultados de Prospectos -->
         <section class="resultados">
             <h2>🎯 Leads Premium Encontrados</h2>
             <div id="lista-leads" class="grid-leads">
-                <p class="empty-state">Ingresa tus datos de búsqueda para consultar Google Maps en tiempo real.</p>
+                <p class="empty-state">Ingresa una ciudad y categoría para escanear en tiempo real.</p>
             </div>
         </section>
     </main>
 
-    <div class="agente-ia-container">
-        <div class="agente-header">
-            <span>🧠 Gurú IA: Asesor de Ventas & Agentes</span>
+    <!-- Agente IA Gurú Flotante e Interactivo -->
+    <div class="agente-ia-container" id="agenteContainer">
+        <div class="agente-header" onclick="toggleChat()">
+            <div class="agente-title">
+                <span class="status-dot"></span>
+                <span>🧠 Gurú IA - Asistente & Mentor</span>
+            </div>
+            <button class="btn-toggle" id="btnToggleChat">▼</button>
         </div>
-        <div class="agente-chat" id="chatGuru">
-            <p class="msg-ia"><strong>Gurú IA:</strong> ¡Hola! Soy tu mentor comercial. Cuando encuentres un lead sin página web, presiona "Consultar al Gurú" en su tarjeta y te daré la estrategia exacta de venta, plantilla de pitch y la arquitectura de agente IA que le podemos ofrecer.</p>
+        
+        <div class="agente-body" id="agenteBody">
+            <div class="agente-chat" id="chatGuru">
+                <div class="msg-ia">
+                    <strong>🤖 Gurú IA:</strong> ¡Hola! Estoy 100% listo para ayudarte. Puedes hacerme cualquier pregunta técnica, pedirme que cree una propuesta, busque información en la web o analice los leads de la pantalla.
+                </div>
+            </div>
+
+            <!-- Panel de Entrada para Hacer Preguntas Directas -->
+            <div class="agente-input-area">
+                <input type="text" id="preguntaAgente" placeholder="Escribe tu pregunta u orden aquí..." onkeypress="handleKeyPress(event)">
+                <button onclick="preguntarAlAgente()" class="btn-enviar">Enviar</button>
+            </div>
         </div>
     </div>
 
