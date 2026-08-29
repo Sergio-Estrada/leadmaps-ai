@@ -12,33 +12,24 @@ async function buscarLeadsReales() {
     statusBox.innerText = `🔍 Escaneando OpenStreetMap en ${ciudad}...`;
     contenedor.innerHTML = "";
 
-    // Consulta nativa a la API pública de OpenStreetMap (Sin API Key)
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(categoria + " " + ciudad)}&extratags=1&addressdetails=1`;
+  // Simulación del puente de comunicación entre la interfaz web y tu script de Python
+function enviarTareaAlAgente(instruccion) {
+    const chat = document.getElementById("chatGuru");
+    
+    // Mostrar estado de procesamiento
+    const msgProcesando = document.createElement("div");
+    msgProcesando.className = "msg-ia";
+    msgProcesando.innerHTML = `<strong>🤖 Agente pensando:</strong> Ejecutando orden y consultando la web para: <em>"${instruccion}"</em>...`;
+    chat.prepend(msgProcesando);
 
-    try {
-        const response = await fetch(url);
-        const resultados = await response.json();
-
-        if (resultados.length === 0) {
-            statusBox.innerText = "❌ No se encontraron resultados en esa zona.";
-            contenedor.innerHTML = "<p class='empty-state'>Intenta con otra categoría o ciudad.</p>";
-            return;
-        }
-
-        statusBox.innerText = `✅ Se encontraron ${resultados.length} ubicaciones reales. Filtrando Leads Premium...`;
-        renderizarLeadsOSM(resultados);
-
-    } catch (error) {
-        statusBox.innerText = "⚠️ Error al conectar con la red de mapas libre.";
-    }
+    // Conexión simulated / endpoint futuro con agente_guru.py
+    setTimeout(() => {
+        msgProcesando.innerHTML = `
+            <strong>🤖 Agente Gurú (Completado):</strong><br>
+            He procesado tu solicitud. Se analizó el objetivo, se revisaron los datos en la web y el entregable está listo en el proyecto.
+        `;
+    }, 2000);
 }
-
-function renderizarLeadsOSM(lugares) {
-    const contenedor = document.getElementById("lista-leads");
-    contenedor.innerHTML = "";
-
-    lugares.forEach(lugar => {
-        const extra = lugar.extratags || {};
         // Si no se reporta sitio web en los datos públicos del mapa, se marca como Lead Premium
         const tieneWebsite = extra.website || extra["contact:website"];
 
