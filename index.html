@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LeadHunter AI - Gemini Assistant</title>
+    <title>LeadHunter AI - Prospectador Comercial Gemini</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
     <header>
         <div class="header-content">
             <h1>⚡ LeadHunter AI</h1>
-            <p>Generador de Leads & Asesor IA Comercial con Gemini</p>
+            <p>Generación de Leads Premium & Asesor IA Comercial en Tiempo Real</p>
         </div>
     </header>
 
@@ -55,7 +55,7 @@
         </section>
     </main>
 
-    <!-- Agente Gemini con Voz y Escritura -->
+    <!-- Agente Flotante Gemini -->
     <div class="agente-ia-container" id="agenteContainer">
         <div class="agente-header" onclick="toggleChat()">
             <div class="agente-title">
@@ -68,13 +68,13 @@
         <div class="agente-body" id="agenteBody">
             <div class="agente-chat" id="chatGuru">
                 <div class="msg-ia">
-                    <strong>✨ Gemini IA:</strong> Hola. Presiona el botón de prospecto o escríbeme directamente para generar un pitch de ventas.
+                    <strong>✨ Gemini IA:</strong> Hola. Escríbeme o pulsa el micrófono para redactar correos, guiones telefónicos o mensajes de ventas.
                 </div>
             </div>
 
             <div class="agente-input-area">
                 <input type="text" id="preguntaAgente" placeholder="Escribe o presiona el micrófono..." onkeypress="handleKeyPress(event)">
-                <button onclick="escucharVoz()" id="btnMic" class="btn-mic" title="Presiona para hablar">🎙️</button>
+                <button onclick="escucharVoz()" id="btnMic" class="btn-mic" title="Hablar por micrófono">🎙️</button>
                 <button onclick="enviarAGeminiManual()" class="btn-enviar">Enviar</button>
             </div>
         </div>
