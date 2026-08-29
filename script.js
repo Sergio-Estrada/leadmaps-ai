@@ -139,7 +139,7 @@ async function enviarAGemini(promptDirecto = null) {
     const textoConsulta = promptDirecto || input.value.trim();
 
     if (!apiKey) {
-        alert("Ingresa tu API Key de Gemini en el panel izquierdo para utilizar al Asesor IA.");
+        alert("AQ.Ab8RN6LOGPa_guvWSfT8n1VVP-uvX-ARhb-Z_5l1vtV6grrrkg");
         return;
     }
 
