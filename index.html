@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LeadHunter AI - Prospectador Premium & Agente Inteligente</title>
+    <title>LeadHunter AI - Generador de Leads</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,41 +11,50 @@
     <header>
         <div class="header-content">
             <h1>⚡ LeadHunter AI</h1>
-            <p>Buscador de Leads Premium en Mapas Libres & Agente de IA Multitarea</p>
+            <p>Generador de Leads Premium & Extractor de Datos Negocio a Negocio</p>
         </div>
     </header>
 
     <main class="layout">
-        <!-- Panel de Búsqueda Intuitivo -->
         <section class="panel-busqueda">
-            <h2>🔎 Escáner de Leads Libres</h2>
+            <h2>🔎 Generador de Leads</h2>
             <div class="grupo-input">
                 <label for="ciudad">Ubicación / Ciudad:</label>
                 <input type="text" id="ciudad" placeholder="Ej: Tijuana, Tecate, CDMX">
                 
                 <label for="categoria">Categoría Comercial:</label>
-                <input type="text" id="categoria" placeholder="Ej: Talleres, Restaurantes, Dentistas">
+                <input type="text" id="categoria" placeholder="Ej: Talleres, Dentistas, Panaderías">
+
+                <div class="filtro-opciones">
+                    <label>
+                        <input type="checkbox" id="filtroSinWeb" checked> Solo leads sin página web
+                    </label>
+                </div>
                 
-                <button onclick="buscarLeadsReales()">🚀 Buscar Leads Reales</button>
+                <button onclick="generarLeads()">🚀 Generar Lista de Leads</button>
             </div>
-            <div id="status" class="status-box">Listo para escanear de forma nativa sin API Key...</div>
+            <div id="status" class="status-box">Listo para escanear y generar base de datos...</div>
         </section>
 
-        <!-- Resultados de Prospectos -->
         <section class="resultados">
-            <h2>🎯 Leads Premium Encontrados</h2>
+            <div class="header-resultados">
+                <h2>🎯 Prospectos Generados (<span id="contadorLeads">0</span>)</h2>
+                <div class="acciones-exportar">
+                    <button onclick="exportarCSV()" class="btn-exportar">📥 Exportar a CSV / Excel</button>
+                </div>
+            </div>
             <div id="lista-leads" class="grid-leads">
-                <p class="empty-state">Ingresa una ciudad y categoría para escanear en tiempo real.</p>
+                <p class="empty-state">Ingresa una ciudad y categoría para extraer la base de prospectos.</p>
             </div>
         </section>
     </main>
 
-    <!-- Agente IA Gurú Flotante e Interactivo -->
+    <!-- Agente IA Gurú Flotante -->
     <div class="agente-ia-container" id="agenteContainer">
         <div class="agente-header" onclick="toggleChat()">
             <div class="agente-title">
                 <span class="status-dot"></span>
-                <span>🧠 Gurú IA - Asistente & Mentor</span>
+                <span>🧠 Gurú IA - Asesor Comercial & Scripts</span>
             </div>
             <button class="btn-toggle" id="btnToggleChat">▼</button>
         </div>
@@ -53,13 +62,12 @@
         <div class="agente-body" id="agenteBody">
             <div class="agente-chat" id="chatGuru">
                 <div class="msg-ia">
-                    <strong>🤖 Gurú IA:</strong> ¡Hola! Estoy 100% listo para ayudarte. Puedes hacerme cualquier pregunta técnica, pedirme que cree una propuesta, busque información en la web o analice los leads de la pantalla.
+                    <strong>🤖 Gurú IA:</strong> Generador listo. Extrae prospectos y te generaré guiones de prospección por WhatsApp o llamadas en frío.
                 </div>
             </div>
 
-            <!-- Panel de Entrada para Hacer Preguntas Directas -->
             <div class="agente-input-area">
-                <input type="text" id="preguntaAgente" placeholder="Escribe tu pregunta u orden aquí..." onkeypress="handleKeyPress(event)">
+                <input type="text" id="preguntaAgente" placeholder="Pide un guion o estrategia..." onkeypress="handleKeyPress(event)">
                 <button onclick="preguntarAlAgente()" class="btn-enviar">Enviar</button>
             </div>
         </div>
