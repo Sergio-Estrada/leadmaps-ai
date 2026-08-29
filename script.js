@@ -1,16 +1,18 @@
-// 1. Búsqueda Nativa y Gratuita de Leads con OpenStreetMap (Sin API Key)
-async function buscarLeadsReales() {
+let leadsProcesados = [];
+
+async function generarLeads() {
     const ciudad = document.getElementById("ciudad").value.trim();
     const categoria = document.getElementById("categoria").value.trim();
+    const soloSinWeb = document.getElementById("filtroSinWeb").checked;
     const statusBox = document.getElementById("status");
     const contenedor = document.getElementById("lista-leads");
 
     if (!ciudad || !categoria) {
-        alert("Por favor completa los campos de Ciudad y Categoría.");
+        alert("Ingresa Ciudad y Categoría.");
         return;
     }
 
-    statusBox.innerText = `🔍 Escaneando OpenStreetMap en ${ciudad}...`;
+    statusBox.innerText = `🔍 Buscando negocios en ${ciudad}...`;
     contenedor.innerHTML = "";
 
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(categoria + " " + ciudad)}&extratags=1&addressdetails=1`;
@@ -20,104 +22,134 @@ async function buscarLeadsReales() {
         const resultados = await response.json();
 
         if (resultados.length === 0) {
-            statusBox.innerText = "❌ No se encontraron resultados en esta zona.";
-            contenedor.innerHTML = "<p class='empty-state'>Intenta con otra categoría o ciudad cerca de tu zona.</p>";
+            statusBox.innerText = "❌ No se encontraron prospectos en esta zona.";
+            contenedor.innerHTML = "<p class='empty-state'>Intenta con otra categoría o zona comercial.</p>";
+            document.getElementById("contadorLeads").innerText = "0";
             return;
         }
 
-        statusBox.innerText = `✅ Se encontraron ${resultados.length} ubicaciones reales. Filtrando Leads Premium...`;
-        renderizarLeadsOSM(resultados);
+        leadsProcesados = [];
+
+        resultados.forEach(lugar => {
+            const extra = lugar.extratags || {};
+            const tieneWebsite = extra.website || extra["contact:website"];
+            const nombre = lugar.display_name.split(',')[0];
+            const telefono = extra.phone || extra["contact:phone"] || "No registrado";
+            const direccion = lugar.display_name;
+
+            const leadObj = {
+                nombre: nombre,
+                telefono: telefono,
+                direccion: direccion,
+                tieneWeb: Boolean(tieneWebsite),
+                websiteUrl: tieneWebsite || "N/A"
+            };
+
+            if (soloSinWeb) {
+                if (!tieneWebsite) leadsProcesados.push(leadObj);
+            } else {
+                leadsProcesados.push(leadObj);
+            }
+        });
+
+        statusBox.innerText = `✅ Completado: ${leadsProcesados.length} leads cualificados.`;
+        document.getElementById("contadorLeads").innerText = leadsProcesados.length;
+        renderizarTarjetas();
 
     } catch (error) {
-        statusBox.innerText = "⚠️ Error de conexión al consultar el mapa público.";
+        statusBox.innerText = "⚠️ Error al consultar el servicio de datos.";
     }
 }
 
-// 2. Renderizado de Negocios Cualificados
-function renderizarLeadsOSM(lugares) {
+function renderizarTarjetas() {
     const contenedor = document.getElementById("lista-leads");
     contenedor.innerHTML = "";
 
-    lugares.forEach(lugar => {
-        const extra = lugar.extratags || {};
-        const tieneWebsite = extra.website || extra["contact:website"];
+    if (leadsProcesados.length === 0) {
+        contenedor.innerHTML = "<p class='empty-state'>No hay leads que cumplan con los filtros.</p>";
+        return;
+    }
 
-        if (!tieneWebsite) {
-            const nombreNegocio = lugar.display_name.split(',')[0];
-            const card = document.createElement("div");
-            card.className = "tarjeta-lead premium";
-            card.innerHTML = `
-                <div>
-                    <span class="tag-premium">LEAD PREMIUM (Sin Web)</span>
-                    <h3>${nombreNegocio}</h3>
-                    <p><strong>📍 Ubicación:</strong> ${lugar.display_name}</p>
-                    <p><strong>📞 Teléfono:</strong> ${extra.phone || extra["contact:phone"] || "No registrado"}</p>
-                </div>
-                <button class="btn-guru" onclick="consultarEstrategiaLead('${nombreNegocio}')">🧠 Consultar Estrategia al Gurú</button>
-            `;
-            contenedor.appendChild(card);
-        }
+    leadsProcesados.forEach(lead => {
+        const card = document.createElement("div");
+        card.className = `tarjeta-lead ${!lead.tieneWeb ? 'premium' : ''}`;
+        card.innerHTML = `
+            <div>
+                <span class="tag-premium">${!lead.tieneWeb ? 'LEAD HIGH-PRIORITY (Sin Web)' : 'LEAD ESTÁNDAR'}</span>
+                <h3>${lead.nombre}</h3>
+                <p><strong>📍 Ubicación:</strong> ${lead.direccion}</p>
+                <p><strong>📞 Teléfono:</strong> ${lead.telefono}</p>
+                <p><strong>🌐 Web:</strong> ${lead.websiteUrl}</p>
+            </div>
+            <button class="btn-guru" onclick="consultarEstrategiaLead('${lead.nombre}')">🧠 Generar Script Comercial</button>
+        `;
+        contenedor.appendChild(card);
+    });
+}
+
+function exportarCSV() {
+    if (leadsProcesados.length === 0) {
+        alert("Primero genera una lista de leads.");
+        return;
+    }
+
+    let csvContent = "data:text/csv;charset=utf-8,Nombre,Telefono,Direccion,Tiene_Web,Sitio_Web\n";
+
+    leadsProcesados.forEach(lead => {
+        const nombreClean = `"${lead.nombre.replace(/"/g, '""')}"`;
+        const telClean = `"${lead.telefono}"`;
+        const dirClean = `"${lead.direccion.replace(/"/g, '""')}"`;
+        const webClean = `"${lead.websiteUrl}"`;
+        
+        csvContent += `${nombreClean},${telClean},${dirClean},${lead.tieneWeb ? 'SI' : 'NO'},${webClean}\n`;
     });
 
-    if (contenedor.children.length === 0) {
-        contenedor.innerHTML = "<p class='empty-state'>Todos los lugares encontrados en esta muestra ya cuentan con sitio web registrado.</p>";
-    }
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Leads_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
-// 3. Estrategia Automática para Negocios de la Lista
 function consultarEstrategiaLead(nombreNegocio) {
-    const chat = document.getElementById("chatGuru");
-    
-    // Asegurar que el chat esté expandido
     document.getElementById("agenteContainer").classList.remove("collapsed");
 
-    const respuestaEstrategica = `
-        <strong>🧠 Gurú IA - Estrategia para: ${nombreNegocio}</strong><br><br>
-        <strong>1. Diagnóstico:</strong> Prospecto activo en mapas sin sitio web ni recepción digital.<br>
-        <strong>2. Solución a Vender:</strong> Landing Page ultra rápida + Agente IA en WhatsApp para reservaciones o dudas 24/7.<br>
-        <strong>3. Script de Acercamiento:</strong><br>
-        <em>"Hola equipo de ${nombreNegocio}, encontré su negocio en el mapa y noté que no tienen sitio web para recibir clientes en automático. Les armé una propuesta con un Agente de IA..."</em>
+    const propuesta = `
+        <strong>🧠 Pitch de Venta para: ${nombreNegocio}</strong><br><br>
+        <strong>• Mensaje sugerido:</strong><br>
+        <em>"Hola equipo de ${nombreNegocio}, noté que en mapas no disponen de un sitio web ni atención automatizada. Diseñé una propuesta con Agente de IA para calificar prospectos 24/7. ¿Les muestro una demo rápida?"</em>
     `;
 
-    agregarMensajeIA(respuestaEstrategica);
+    agregarMensajeIA(propuesta);
 }
 
-// 4. Interacción Directa: Preguntar cualquier cosa al Agente
 function preguntarAlAgente() {
     const input = document.getElementById("preguntaAgente");
     const pregunta = input.value.trim();
-
     if (!pregunta) return;
 
-    // Dibujar pregunta del usuario en el chat
     agregarMensajeUsuario(pregunta);
     input.value = "";
 
-    // Respuesta dinámica del Agente
     setTimeout(() => {
-        const respuestaIA = generarRespuestaAgente(pregunta);
+        const respuestaIA = responderAgente(pregunta);
         agregarMensajeIA(respuestaIA);
-    }, 800);
+    }, 600);
 }
 
-// Generador de Respuestas y Resolución de Tareas del Agente
-function generarRespuestaAgente(pregunta) {
-    const texto = pregunta.toLowerCase();
-
-    if (texto.includes("hola") || texto.includes("buenos")) {
-        return "¡Hola! Estoy listo para apoyarte. ¿Qué proyecto, consulta o código quieres que desarrollemos hoy?";
-    } else if (texto.includes("script") || texto.includes("pitch") || texto.includes("mensaje")) {
-        return "<strong>🤖 Propuesta de Pitch Directo:</strong><br><em>'Hola, me di cuenta de que su negocio recibe clientes por mapa pero pierde oportunidades al no tener un agente de IA que atienda en web. ¿Les gustaría ver una demostración en 5 minutos?'</em>";
-    } else if (texto.includes("github") || texto.includes("codigo") || texto.includes("subir")) {
-        return "<strong>🛠️ Comandos para actualizar GitHub:</strong><br><code>git add .</code><br><code>git commit -m 'Actualizacion del agente e interfaz'</code><br><code>git push</code>";
-    } else if (texto.includes("agente") || texto.includes("ia") || texto.includes("python")) {
-        return "<strong>🤖 Agentes de IA:</strong> Puedo ayudarte a conectar este panel con frameworks como CrewAI o LangChain en Python para ejecutar búsquedas autónomas en la web.";
+function responderAgente(pregunta) {
+    const txt = pregunta.toLowerCase();
+    if (txt.includes("excel") || txt.includes("csv") || txt.includes("descargar")) {
+        return "Haz clic en el botón verde <strong>'📥 Exportar a CSV / Excel'</strong> arriba a la derecha para descargar el archivo.";
+    } else if (txt.includes("script") || txt.includes("pitch") || txt.includes("llamada")) {
+        return "<strong>Script de Llamada:</strong><br><em>'Buenas tardes, llamo para presentarles un sistema de captura automática de clientes en su área...'</em>";
     } else {
-        return `<strong>🤖 Agente Gurú:</strong> He procesado tu solicitud: <em>"${pregunta}"</em>.<br><br>Estoy analizando el requerimiento y puedo generarte el plan de acción, el diseño web o el código necesario. ¿Quieres que lo preparemos en Python o JS?`;
+        return `Registré tu consulta sobre <em>"${pregunta}"</em>. Puedo ayudarte a estructurar landing pages o bots para estos prospectos.`;
     }
 }
 
-// Funciones Auxiliares de Interfaz
 function agregarMensajeUsuario(texto) {
     const chat = document.getElementById("chatGuru");
     const msg = document.createElement("div");
@@ -137,12 +169,9 @@ function agregarMensajeIA(htmlContent) {
 }
 
 function handleKeyPress(e) {
-    if (e.key === "Enter") {
-        preguntarAlAgente();
-    }
+    if (e.key === "Enter") preguntarAlAgente();
 }
 
 function toggleChat() {
-    const container = document.getElementById("agenteContainer");
-    container.classList.toggle("collapsed");
+    document.getElementById("agenteContainer").classList.toggle("collapsed");
 }
