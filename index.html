@@ -1,19 +1,82 @@
-<!-- Dentro del panel o chat de tu HTML -->
-<div class="agente-ia-container" id="agenteContainer">
-    <div class="agente-header" onclick="toggleChat()">
-        <span>🧠 Agente Gemini - Asesor IA</span>
-        <button id="btnToggleChat">▼</button>
-    </div>
-    
-    <div class="agente-body" id="agenteBody">
-        <div class="agente-chat" id="chatGuru">
-            <div class="msg-ia">🤖 Hola, soy tu agente Gemini. Puedes escribirme o pulsar el micrófono para hablarme.</div>
-        </div>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeadHunter AI - Prospectador & Asesor Gemini</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-        <div class="agente-input-area">
-            <input type="text" id="preguntaAgente" placeholder="Escribe o usa la voz..." onkeypress="handleKeyPress(event)">
-            <button onclick="escucharVoz()" id="btnMic" title="Hablar por micrófono">🎙️</button>
-            <button onclick="enviarAGemini()" class="btn-enviar">Enviar</button>
+    <header>
+        <div class="header-content">
+            <h1>⚡ LeadHunter AI</h1>
+            <p>Generación de Leads Premium & Asesoría IA Comercial en Tiempo Real</p>
+        </div>
+    </header>
+
+    <main class="layout">
+        <section class="panel-busqueda">
+            <h2>🔎 Búsqueda de Prospectos</h2>
+            <div class="grupo-input">
+                <label for="apiKey">Gemini API Key:</label>
+                <input type="password" id="apiKey" placeholder="Pega tu API Key de AI Studio aquí">
+                
+                <label for="ciudad">Ubicación / Ciudad:</label>
+                <input type="text" id="ciudad" placeholder="Ej: Tijuana, Tecate, CDMX">
+                
+                <label for="categoria">Categoría Comercial:</label>
+                <input type="text" id="categoria" placeholder="Ej: Restaurantes, Panaderías, naves industriales">
+
+                <div class="filtro-opciones">
+                    <label>
+                        <input type="checkbox" id="filtroSinWeb" checked> Priorizar leads sin sitio web
+                    </label>
+                </div>
+                
+                <button onclick="generarLeads()">🚀 Buscar Prospectos</button>
+            </div>
+            <div id="status" class="status-box">Ingresa tu API Key de Gemini y parámetros para comenzar...</div>
+        </section>
+
+        <section class="resultados">
+            <div class="header-resultados">
+                <h2>🎯 Leads Cualificados (<span id="contadorLeads">0</span>)</h2>
+                <div class="acciones-exportar">
+                    <button onclick="exportarCSV()" class="btn-exportar">📥 Exportar a CSV / Excel</button>
+                </div>
+            </div>
+            <div id="lista-leads" class="grid-leads">
+                <p class="empty-state">Genera una lista para analizar oportunidades comerciales.</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Agente Gemini con Voz y Escritura -->
+    <div class="agente-ia-container" id="agenteContainer">
+        <div class="agente-header" onclick="toggleChat()">
+            <div class="agente-title">
+                <span class="status-dot"></span>
+                <span>✨ Agente Gemini - Asesor Estratégico</span>
+            </div>
+            <button class="btn-toggle" id="btnToggleChat">▼</button>
+        </div>
+        
+        <div class="agente-body" id="agenteBody">
+            <div class="agente-chat" id="chatGuru">
+                <div class="msg-ia">
+                    <strong>✨ Gemini IA:</strong> Hola. Estoy listo para ayudarte a redactar pitches de ventas, guiones de llamada en frío o propuestas comerciales. Habla o escribe tu consulta.
+                </div>
+            </div>
+
+            <div class="agente-input-area">
+                <input type="text" id="preguntaAgente" placeholder="Escribe o presiona el micrófono..." onkeypress="handleKeyPress(event)">
+                <button onclick="escucharVoz()" id="btnMic" class="btn-mic" title="Presiona para hablar">🎙️</button>
+                <button onclick="enviarAGemini()" class="btn-enviar">Enviar</button>
+            </div>
         </div>
     </div>
-</div>
+
+    <script src="script.js"></script>
+</body>
+</html>
