@@ -2,23 +2,24 @@ let leadsProcesados = [];
 const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let reconocedor;
 
-// Inicialización y carga de clave guardada
+// Inicialización de la API Key guardada
 window.addEventListener("DOMContentLoaded", () => {
     const savedKey = localStorage.getItem("gemini_api_key");
     if (savedKey) {
         document.getElementById("apiKey").value = savedKey;
-        actualizarEstado("✅ API Key cargada. Lista para usar.");
+        actualizarEstado("✅ API Key cargada desde el navegador.");
     }
 });
 
 function guardarApiKey() {
     const key = document.getElementById("apiKey").value.trim();
     if (!key) {
-        alert("Por favor pega una API Key válida.");
+        alert("Por favor ingresa una API Key válida.");
         return;
     }
     localStorage.setItem("gemini_api_key", key);
-    actualizarEstado("✅ API Key guardada en el navegador.");
+    alert("API Key guardada correctamente.");
+    actualizarEstado("✅ API Key guardada. Sistema listo.");
 }
 
 function actualizarEstado(mensaje) {
@@ -26,7 +27,51 @@ function actualizarEstado(mensaje) {
     if (statusBox) statusBox.innerText = mensaje;
 }
 
-// Búsqueda de prospectos (OpenStreetMap)
+// Configuración de Reconocimiento de Voz
+if (Recognition) {
+    reconocedor = new Recognition();
+    reconocedor.lang = 'es-MX';
+    reconocedor.continuous = false;
+
+    reconocedor.onresult = (event) => {
+        const textoVoz = event.results[0][0].transcript;
+        document.getElementById("preguntaAgente").value = textoVoz;
+        enviarAGeminiManual();
+    };
+
+    reconocedor.onerror = (event) => {
+        console.error("Error de voz:", event.error);
+        actualizarEstadoMic(false);
+    };
+
+    reconocedor.onend = () => {
+        actualizarEstadoMic(false);
+    };
+}
+
+function escucharVoz() {
+    if (!reconocedor) {
+        alert("Tu navegador no soporta entrada de voz nativa.");
+        return;
+    }
+    actualizarEstadoMic(true);
+    reconocedor.start();
+}
+
+function actualizarEstadoMic(activo) {
+    const btnMic = document.getElementById("btnMic");
+    if (btnMic) {
+        if (activo) {
+            btnMic.classList.add("escuchando");
+            btnMic.innerText = "🔴";
+        } else {
+            btnMic.classList.remove("escuchando");
+            btnMic.innerText = "🎙️";
+        }
+    }
+}
+
+// Búsqueda de Leads con OpenStreetMap (Nominatim API)
 async function generarLeads() {
     const ciudad = document.getElementById("ciudad").value.trim();
     const categoria = document.getElementById("categoria").value.trim();
@@ -34,12 +79,12 @@ async function generarLeads() {
     const contenedor = document.getElementById("lista-leads");
 
     if (!ciudad || !categoria) {
-        alert("Por favor ingresa la ciudad y la categoría.");
+        alert("Ingresa la ciudad y la categoría comercial.");
         return;
     }
 
-    actualizarEstado(`🔍 Buscando negocios en ${ciudad}...`);
-    contenedor.innerHTML = "<p class='empty-state'>⏳ Escaneando mapa en tiempo real...</p>";
+    actualizarEstado(`🔍 Escaneando negocios en ${ciudad}...`);
+    contenedor.innerHTML = "<p class='empty-state'>⏳ Escaneando datos comerciales en tiempo real...</p>";
 
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(categoria + " " + ciudad)}&extratags=1&addressdetails=1`;
 
@@ -49,7 +94,7 @@ async function generarLeads() {
 
         if (!resultados || resultados.length === 0) {
             actualizarEstado("❌ No se encontraron prospectos en esta zona.");
-            contenedor.innerHTML = "<p class='empty-state'>Sin resultados. Intenta con otra ubicación o rubro.</p>";
+            contenedor.innerHTML = "<p class='empty-state'>Sin resultados. Prueba con otra zona o giro.</p>";
             document.getElementById("contadorLeads").innerText = "0";
             return;
         }
@@ -78,14 +123,14 @@ async function generarLeads() {
             }
         });
 
-        actualizarEstado(`✅ Se encontraron ${leadsProcesados.length} leads.`);
+        actualizarEstado(`✅ Búsqueda completada: ${leadsProcesados.length} leads cualificados.`);
         document.getElementById("contadorLeads").innerText = leadsProcesados.length;
         renderizarTarjetas();
 
     } catch (error) {
-        console.error("Error al buscar leads:", error);
-        actualizarEstado("⚠️ Error de conexión al buscar negocios.");
-        contenedor.innerHTML = "<p class='empty-state'>Ocurrió un error en la búsqueda.</p>";
+        console.error("Error al obtener leads:", error);
+        actualizarEstado("⚠️ Error de conexión con el motor de mapas.");
+        contenedor.innerHTML = "<p class='empty-state'>Ocurrió un error en la búsqueda de datos.</p>";
     }
 }
 
@@ -94,7 +139,7 @@ function renderizarTarjetas() {
     contenedor.innerHTML = "";
 
     if (leadsProcesados.length === 0) {
-        contenedor.innerHTML = "<p class='empty-state'>No hay prospectos que cumplan el filtro seleccionado.</p>";
+        contenedor.innerHTML = "<p class='empty-state'>No hay resultados con los filtros aplicados.</p>";
         return;
     }
 
@@ -102,8 +147,7 @@ function renderizarTarjetas() {
         const card = document.createElement("div");
         card.className = `tarjeta-lead ${!lead.tieneWeb ? 'premium' : ''}`;
         
-        // Escape de comillas para evitar rupturas de sintaxis
-        const nombreEscapado = lead.nombre.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const nombreLimpio = lead.nombre.replace(/'/g, "\\'").replace(/"/g, '&quot;');
         
         card.innerHTML = `
             <div>
@@ -111,15 +155,15 @@ function renderizarTarjetas() {
                 <h3>${lead.nombre}</h3>
                 <p><strong>📍 Ubicación:</strong> ${lead.direccion}</p>
                 <p><strong>📞 Teléfono:</strong> ${lead.telefono}</p>
-                <p><strong>🌐 Web:</strong> ${lead.websiteUrl}</p>
+                <p><strong>🌐 Sitio Web:</strong> ${lead.websiteUrl}</p>
             </div>
-            <button class="btn-guru" onclick="consultarEstrategiaLead('${nombreEscapado}', '${lead.websiteUrl}')">✨ Crear Pitch con Gemini</button>
+            <button class="btn-guru" onclick="consultarEstrategiaLead('${nombreLimpio}', '${lead.websiteUrl}')">✨ Crear Pitch con Gemini</button>
         `;
         contenedor.appendChild(card);
     });
 }
 
-// Ejecución del Agente Gemini
+// Comunicación con Gemini API
 function enviarAGeminiManual() {
     const input = document.getElementById("preguntaAgente");
     const texto = input.value.trim();
@@ -134,8 +178,8 @@ function consultarEstrategiaLead(nombreNegocio, tieneWeb) {
     const agenteContainer = document.getElementById("agenteContainer");
     if (agenteContainer) agenteContainer.classList.remove("collapsed");
 
-    const prompt = `Genera un mensaje comercial breve para prospectar al negocio "${nombreNegocio}". Estado de sitio web: "${tieneWeb}".`;
-    agregarMensajeUsuario(`Estrategia para: ${nombreNegocio}`);
+    const prompt = `Genera un pitch comercial breve de WhatsApp para prospectar a "${nombreNegocio}". Estado web: "${tieneWeb}".`;
+    agregarMensajeUsuario(`Pitch para: ${nombreNegocio}`);
     ejecutarLlamadaGemini(prompt);
 }
 
@@ -143,12 +187,11 @@ async function ejecutarLlamadaGemini(prompt) {
     const apiKey = document.getElementById("apiKey").value.trim() || localStorage.getItem("gemini_api_key");
 
     if (!apiKey) {
-        agregarMensajeIA("⚠️ Ingresa tu API Key de Gemini y presiona 'Guardar Key'.");
+        agregarMensajeIA("⚠️ Ingresa tu API Key de Gemini y haz clic en 'Guardar Key'.");
         return;
     }
 
-    // Indicador visual de procesamiento
-    agregarMensajeIA("⏳ <em>Gemini está pensando la respuesta...</em>", "msg-temp");
+    agregarMensajeIA("⏳ <em>Gemini está redactando la propuesta...</em>", "msg-temp");
 
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
@@ -158,19 +201,18 @@ async function ejecutarLlamadaGemini(prompt) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{
-                    parts: [{ text: `Eres un experto en ventas B2B. Responde brevemente: ${prompt}` }]
+                    parts: [{ text: `Eres un consultor experto en ventas B2B. Responde de forma ejecutiva: ${prompt}` }]
                 }]
             })
         });
 
-        // Remover mensaje temporal
         const tempMsg = document.querySelector(".msg-temp");
         if (tempMsg) tempMsg.remove();
 
         const data = await response.json();
 
         if (data.error) {
-            agregarMensajeIA(`⚠️ Error de API: ${data.error.message}`);
+            agregarMensajeIA(`⚠️ Error de Google AI Studio: ${data.error.message}`);
             return;
         }
 
@@ -182,11 +224,10 @@ async function ejecutarLlamadaGemini(prompt) {
         console.error("Error Fetch:", error);
         const tempMsg = document.querySelector(".msg-temp");
         if (tempMsg) tempMsg.remove();
-        agregarMensajeIA("⚠️ Error de conexión con los servidores de Gemini.");
+        agregarMensajeIA("⚠️ Error de conexión con la API de Gemini.");
     }
 }
 
-// Control de audio
 function reproducirVoz(texto) {
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
@@ -197,7 +238,32 @@ function reproducirVoz(texto) {
     }
 }
 
-// Interfaz del Chat
+function exportarCSV() {
+    if (leadsProcesados.length === 0) {
+        alert("Genera una lista de leads antes de exportar.");
+        return;
+    }
+
+    let csvContent = "data:text/csv;charset=utf-8,Nombre,Telefono,Direccion,Tiene_Web,Sitio_Web\n";
+
+    leadsProcesados.forEach(lead => {
+        const nombreClean = `"${lead.nombre.replace(/"/g, '""')}"`;
+        const telClean = `"${lead.telefono}"`;
+        const dirClean = `"${lead.direccion.replace(/"/g, '""')}"`;
+        const webClean = `"${lead.websiteUrl}"`;
+        
+        csvContent += `${nombreClean},${telClean},${dirClean},${lead.tieneWeb ? 'SI' : 'NO'},${webClean}\n`;
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Leads_Premium_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
 function agregarMensajeUsuario(texto) {
     const chat = document.getElementById("chatGuru");
     const msg = document.createElement("div");
