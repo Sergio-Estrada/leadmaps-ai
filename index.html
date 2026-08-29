@@ -2,30 +2,45 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Buscador de Leads Premium</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeadHunter AI - Prospectador Premium</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <header>
-        <h1>🎯 Detector de Leads Premium</h1>
-        <p>Encuentra negocios en Google Maps sin sitio web</p>
+        <h1>⚡ LeadHunter AI</h1>
+        <p>Buscador de Leads Premium en Google Maps con Asistente Gurú de IA</p>
     </header>
 
-    <main class="contenedor">
+    <main class="layout">
         <section class="panel-busqueda">
-            <input type="text" id="ciudad" placeholder="Ej: Ciudad de México">
-            <input type="text" id="categoria" placeholder="Ej: Talleres mecánicos">
-            <button onclick="buscarLeads()">Buscar Leads</button>
+            <h2>🔎 Escáner de Google Maps</h2>
+            <div class="grupo-input">
+                <input type="text" id="apiKey" placeholder="Tu Google Places API Key">
+                <input type="text" id="ciudad" placeholder="Ej: Ciudad de Mexico">
+                <input type="text" id="categoria" placeholder="Ej: Dentistas, Restaurantes, Talleres">
+                <button onclick="buscarLeadsReales()">Buscar Leads Reales</button>
+            </div>
+            <div id="status" class="status-box">Listo para escanear...</div>
         </section>
 
         <section class="resultados">
-            <h2>Prospectos Encontrados</h2>
-            <div id="lista-leads">
-                <p class="estado">Haz clic en buscar para escanear la zona...</p>
+            <h2>🎯 Leads Premium Encontrados</h2>
+            <div id="lista-leads" class="grid-leads">
+                <p class="empty-state">Ingresa tus datos de búsqueda para consultar Google Maps en tiempo real.</p>
             </div>
         </section>
     </main>
+
+    <div class="agente-ia-container">
+        <div class="agente-header">
+            <span>🧠 Gurú IA: Asesor de Ventas & Agentes</span>
+        </div>
+        <div class="agente-chat" id="chatGuru">
+            <p class="msg-ia"><strong>Gurú IA:</strong> ¡Hola! Soy tu mentor comercial. Cuando encuentres un lead sin página web, presiona "Consultar al Gurú" en su tarjeta y te daré la estrategia exacta de venta, plantilla de pitch y la arquitectura de agente IA que le podemos ofrecer.</p>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>
