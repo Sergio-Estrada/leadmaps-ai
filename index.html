@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Buscador de Leads Premium</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>🎯 Detector de Leads Premium</h1>
+        <p>Encuentra negocios en Google Maps sin sitio web</p>
+    </header>
+
+    <main class="contenedor">
+        <section class="panel-busqueda">
+            <input type="text" id="ciudad" placeholder="Ej: Ciudad de México">
+            <input type="text" id="categoria" placeholder="Ej: Talleres mecánicos">
+            <button onclick="buscarLeads()">Buscar Leads</button>
+        </section>
+
+        <section class="resultados">
+            <h2>Prospectos Encontrados</h2>
+            <div id="lista-leads">
+                <p class="estado">Haz clic en buscar para escanear la zona...</p>
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
