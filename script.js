@@ -59,7 +59,7 @@ function actualizarEstadoMic(activo) {
     }
 }
 
-// Búsqueda de Leads con OpenStreetMap
+// Búsqueda de Leads y generación de enlaces a Google Maps
 async function generarLeads() {
     const ciudad = document.getElementById("ciudad").value.trim();
     const categoria = document.getElementById("categoria").value.trim();
@@ -95,11 +95,19 @@ async function generarLeads() {
             const nombre = lugar.display_name.split(',')[0];
             const telefono = extra.phone || extra["contact:phone"] || "No registrado";
             const direccion = lugar.display_name;
+            const latitud = lugar.lat;
+            const longitud = lugar.lon;
+
+            // Enlace directo a Google Maps mediante coordenadas
+            const urlGoogleMaps = `https://www.google.com/maps/search/?api=1&query=${latitud},${longitud}`;
 
             const leadObj = {
                 nombre: nombre,
                 telefono: telefono,
                 direccion: direccion,
+                lat: latitud,
+                lon: longitud,
+                googleMapsUrl: urlGoogleMaps,
                 tieneWeb: tieneWebsite,
                 websiteUrl: tieneWebsite ? (extra.website || extra["contact:website"]) : "Sin sitio web"
             };
@@ -144,6 +152,7 @@ function renderizarTarjetas() {
                 <p><strong>📍 Ubicación:</strong> ${lead.direccion}</p>
                 <p><strong>📞 Teléfono:</strong> ${lead.telefono}</p>
                 <p><strong>🌐 Sitio Web:</strong> ${lead.websiteUrl}</p>
+                <p><strong>🗺️ Google Maps:</strong> <a href="${lead.googleMapsUrl}" target="_blank" style="color: #818cf8; text-decoration: underline;">Ver ubicación exacta</a></p>
             </div>
             <button class="btn-guru" onclick="consultarEstrategiaLead('${nombreLimpio}', '${lead.websiteUrl}')">✨ Crear Pitch con Gemini</button>
         `;
