@@ -1,26 +1,14 @@
+// Clave de API incrustada para ejecución automática
+const GEMINI_API_KEY = "AQ.Ab8RN6JB3Vm1U6Mvq8D0k7YBhzhmKOHvYGAnxrMQlnrck7Ytpw";
+
 let leadsProcesados = [];
 const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let reconocedor;
 
-// Inicialización de la API Key guardada
+// Estado inicial al cargar la página
 window.addEventListener("DOMContentLoaded", () => {
-    const savedKey = localStorage.getItem("gemini_api_key");
-    if (savedKey) {
-        document.getElementById("apiKey").value = savedKey;
-        actualizarEstado("✅ API Key cargada desde el navegador.");
-    }
+    actualizarEstado("✅ Sistema listo y conectado a Gemini 3.6 Flash.");
 });
-
-function guardarApiKey() {
-    const key = document.getElementById("apiKey").value.trim();
-    if (!key) {
-        alert("Por favor ingresa una API Key válida.");
-        return;
-    }
-    localStorage.setItem("gemini_api_key", key);
-    alert("API Key guardada correctamente.");
-    actualizarEstado("✅ API Key guardada. Sistema listo.");
-}
 
 function actualizarEstado(mensaje) {
     const statusBox = document.getElementById("status");
@@ -71,7 +59,7 @@ function actualizarEstadoMic(activo) {
     }
 }
 
-// Búsqueda de Leads con OpenStreetMap (Nominatim API)
+// Búsqueda de Leads con OpenStreetMap
 async function generarLeads() {
     const ciudad = document.getElementById("ciudad").value.trim();
     const categoria = document.getElementById("categoria").value.trim();
@@ -163,7 +151,7 @@ function renderizarTarjetas() {
     });
 }
 
-// Comunicación con Gemini API (Modelo 3.6 Flash)
+// Envío Directo a Gemini 3.6 Flash
 function enviarAGeminiManual() {
     const input = document.getElementById("preguntaAgente");
     const texto = input.value.trim();
@@ -184,17 +172,9 @@ function consultarEstrategiaLead(nombreNegocio, tieneWeb) {
 }
 
 async function ejecutarLlamadaGemini(prompt) {
-    const apiKey = document.getElementById("apiKey").value.trim() || localStorage.getItem("gemini_api_key");
-
-    if (!apiKey) {
-        agregarMensajeIA("⚠️ Ingresa tu API Key de Gemini y haz clic en 'Guardar Key'.");
-        return;
-    }
-
     agregarMensajeIA("⏳ <em>Gemini está redactando la propuesta...</em>", "msg-temp");
 
-    // Endpoint actualizado a gemini-3.6-flash
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`;
 
     try {
         const response = await fetch(endpoint, {
