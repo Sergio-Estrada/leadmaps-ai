@@ -1,96 +1,78 @@
 async function buscarLeadsReales() {
-    const apiKey = document.getElementById("apiKey").value.trim();
     const ciudad = document.getElementById("ciudad").value.trim();
     const categoria = document.getElementById("categoria").value.trim();
     const statusBox = document.getElementById("status");
     const contenedor = document.getElementById("lista-leads");
 
     if (!ciudad || !categoria) {
-        alert("Por favor ingresa la ciudad y categoría de búsqueda.");
+        alert("Por favor ingresa la ciudad y la categoría comercial.");
         return;
     }
 
-    statusBox.innerText = "⏳ Conectando con Google Maps API...";
+    statusBox.innerText = `🔍 Escaneando OpenStreetMap en ${ciudad}...`;
     contenedor.innerHTML = "";
 
-    // Si el usuario no coloca API Key, usamos una llamada demostrativa basada en datos de respuesta reales de Google Maps
-    if (!apiKey) {
-        statusBox.innerText = "⚠️ Sin API Key: Mostrando simulación con estructura exacta de Google Maps.";
-        renderizarLeads(obtenerDatosEjemploReal());
-        return;
-    }
-
-    // Consulta real a la API de Google Places (TextSearch)
-    const query = encodeURIComponent(`${categoria} en ${ciudad}`);
-    const endpoint = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&key=${apiKey}`;
+    // Consulta nativa a la API pública de OpenStreetMap (Sin API Key)
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(categoria + " " + ciudad)}&extratags=1&addressdetails=1`;
 
     try {
-        const res = await fetch(endpoint);
-        const data = await res.json();
+        const response = await fetch(url);
+        const resultados = await response.json();
 
-        if (data.status !== "OK") {
-            statusBox.innerText = `Error de Google API: ${data.status}`;
+        if (resultados.length === 0) {
+            statusBox.innerText = "❌ No se encontraron resultados en esa zona.";
+            contenedor.innerHTML = "<p class='empty-state'>Intenta con otra categoría o ciudad.</p>";
             return;
         }
 
-        statusBox.innerText = `✅ Se encontraron ${data.results.length} lugares en Google Maps. Filtrando...`;
-        renderizarLeads(data.results);
+        statusBox.innerText = `✅ Se encontraron ${resultados.length} ubicaciones reales. Filtrando Leads Premium...`;
+        renderizarLeadsOSM(resultados);
 
-    } catch (err) {
-        statusBox.innerText = "Error de red o CORS al consultar Google Maps Directamente.";
+    } catch (error) {
+        statusBox.innerText = "⚠️ Error al conectar con la red de mapas libre.";
     }
 }
 
-function renderizarLeads(lugares) {
+function renderizarLeadsOSM(lugares) {
     const contenedor = document.getElementById("lista-leads");
     contenedor.innerHTML = "";
 
-    lugares.forEach(place => {
-        // Un lead es 'Premium' si Google no reporta sitio web registrado
-        const tieneWebsite = Boolean(place.website);
-        
+    lugares.forEach(lugar => {
+        const extra = lugar.extratags || {};
+        // Si no se reporta sitio web en los datos públicos del mapa, se marca como Lead Premium
+        const tieneWebsite = extra.website || extra["contact:website"];
+
         if (!tieneWebsite) {
             const card = document.createElement("div");
             card.className = "tarjeta-lead premium";
             card.innerHTML = `
                 <span class="tag-premium">LEAD PREMIUM (Sin Web)</span>
-                <h3>${place.name}</h3>
-                <p><strong>📍 Dirección:</strong> ${place.formatted_address || place.vicinity}</p>
-                <p><strong>⭐ Calificación:</strong> ${place.rating || 'N/A'} (${place.user_ratings_total || 0} reseñas)</p>
-                <button class="btn-guru" onclick="consultarGuruIA('${place.name}', '${place.types ? place.types[0] : 'Negocio'}')">🧠 Consultar Estrategia al Gurú</button>
+                <h3>${lugar.display_name.split(',')[0]}</h3>
+                <p><strong>📍 Ubicación:</strong> ${lugar.display_name}</p>
+                <p><strong>📞 Teléfono:</strong> ${extra.phone || extra["contact:phone"] || "No registrado"}</p>
+                <button class="btn-guru" onclick="consultarGuruIA('${lugar.display_name.split(',')[0]}')">🧠 Asesoría con Gurú IA</button>
             `;
             contenedor.appendChild(card);
         }
     });
 
     if (contenedor.children.length === 0) {
-        contenedor.innerHTML = "<p>No se encontraron negocios sin página web en esta primera página de resultados.</p>";
+        contenedor.innerHTML = "<p class='empty-state'>Todos los lugares encontrados en esta muestra ya tienen sitio web.</p>";
     }
 }
 
-// Lógica de Inteligencia Asistencial del Gurú Comercial
-function consultarGuruIA(nombreNegocio, tipoNegocio) {
+function consultarGuruIA(nombreNegocio) {
     const chat = document.getElementById("chatGuru");
     
-    // Asesoría personalizada según el perfil técnico del cliente
-    let estrategia = `
+    const estrategia = `
         <div class="msg-ia">
-            <strong>🧠 Gurú IA Asesorando sobre: ${nombreNegocio}</strong><br><br>
-            <strong>1. Diagnóstico:</strong> Es un negocio local sin presencia digital propia. Todo su tráfico depende solo de la ficha de Google.<br>
-            <strong>2. Oferta Irresistible:</strong> Véndeles un combo: <em>Landing Page Ultra-rápida + Agente IA de WhatsApp</em> para agendar citas automatizadas.<br>
-            <strong>3. Script de Pitch Directo:</strong><br>
-            <em>"Hola equipo de ${nombreNegocio}, vi sus excelentes reseñas en Google Maps, pero noté que no tienen un botón directo para recibir clientes las 24 horas. Les diseñé un prototipo de sitio web con un asistente de IA que atiende clientes por ustedes..."</em>
+            <strong>🧠 Gurú IA - Plan de Acción para: ${nombreNegocio}</strong><br><br>
+            <strong>Diagnóstico:</strong> Presente en mapas libres pero sin enlace web oficial.<br>
+            <strong>Propuesta Técnica:</strong> Landing Page responsiva + Agente de IA entrenado para responder preguntas frecuentes y agendar citas.<br>
+            <strong>Pitch Sugerido:</strong><br>
+            <em>"Hola, detecté su perfil de negocio en el mapa y noté que no cuentan con un sitio web con recepción automatizada. Desarrollé una demo con un agente de IA que atiende clientes automáticamente..."</em>
         </div>
     `;
 
     chat.innerHTML = estrategia + chat.innerHTML;
-}
-
-// Estructura de respuesta idéntica a la que entrega Google Places API
-function obtenerDatosEjemploReal() {
-    return [
-        { name: "Taller Automotriz San José", formatted_address: "Av. Central 45, CDMX", rating: 4.8, user_ratings_total: 89, website: null, types: ["car_repair"] },
-        { name: "Clínica Dental Sonrisas Sanas", formatted_address: "Calle Hidalgo 12, Guadalajara", rating: 4.5, user_ratings_total: 34, website: null, types: ["dentist"] },
-        { name: "Restaurante Italia Viva", formatted_address: "Plaza Mayor 8, Monterrey", rating: 4.2, user_ratings_total: 120, website: "https://italiaviva.com", types: ["restaurant"] }
-    ];
 }
