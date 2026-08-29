@@ -2,7 +2,27 @@ let leadsProcesados = [];
 const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let reconocedor;
 
-// Configuración de Reconocimiento de Voz
+// Al cargar la página, recuperar la API Key si existe
+window.addEventListener("DOMContentLoaded", () => {
+    const savedKey = localStorage.getItem("gemini_api_key");
+    if (savedKey) {
+        document.getElementById("apiKey").value = savedKey;
+        document.getElementById("status").innerText = "✅ API Key cargada. Listo para buscar y consultar.";
+    }
+});
+
+function guardarApiKey() {
+    const key = document.getElementById("apiKey").value.trim();
+    if (!key) {
+        alert("Por favor pega una API Key válida.");
+        return;
+    }
+    localStorage.setItem("gemini_api_key", key);
+    alert("API Key guardada con éxito en el navegador.");
+    document.getElementById("status").innerText = "✅ API Key guardada correctamente.";
+}
+
+// Reconocimiento de Voz
 if (Recognition) {
     reconocedor = new Recognition();
     reconocedor.lang = 'es-MX';
@@ -11,7 +31,7 @@ if (Recognition) {
     reconocedor.onresult = (event) => {
         const textoVoz = event.results[0][0].transcript;
         document.getElementById("preguntaAgente").value = textoVoz;
-        enviarAGemini();
+        enviarAGeminiManual();
     };
 
     reconocedor.onerror = (event) => {
@@ -44,7 +64,7 @@ function actualizarEstadoMic(activo) {
     }
 }
 
-// Búsqueda de Leads mediante Nominatim OpenStreetMap
+// Motor de Búsqueda de Leads
 async function generarLeads() {
     const ciudad = document.getElementById("ciudad").value.trim();
     const categoria = document.getElementById("categoria").value.trim();
@@ -126,28 +146,37 @@ function renderizarTarjetas() {
                 <p><strong>📞 Teléfono:</strong> ${lead.telefono}</p>
                 <p><strong>🌐 Sitio Web:</strong> ${lead.websiteUrl}</p>
             </div>
-            <button class="btn-guru" onclick="consultarEstrategiaLead('${lead.nombre}', '${lead.websiteUrl}')">✨ Crear Pitch con Gemini</button>
+            <button class="btn-guru" onclick="consultarEstrategiaLead('${lead.nombre.replace(/'/g, "\\'")}', '${lead.websiteUrl}')">✨ Crear Pitch con Gemini</button>
         `;
         contenedor.appendChild(card);
     });
 }
 
-// Integración Nativa con la API de Gemini (gemini-2.5-flash)
-async function enviarAGemini(promptDirecto = null) {
-    const apiKey = document.getElementById("apiKey").value.trim();
+function enviarAGeminiManual() {
     const input = document.getElementById("preguntaAgente");
-    const textoConsulta = promptDirecto || input.value.trim();
+    const texto = input.value.trim();
+    if (!texto) return;
+
+    agregarMensajeUsuario(texto);
+    input.value = "";
+    ejecutarLlamadaGemini(texto);
+}
+
+function consultarEstrategiaLead(nombreNegocio, tieneWeb) {
+    document.getElementById("agenteContainer").classList.remove("collapsed");
+    const promptEstrategico = `Genera un mensaje directo y breve de WhatsApp para prospectar al negocio "${nombreNegocio}". Su sitio web figura como: "${tieneWeb}". Ofrece servicios de infraestructura digital y automatización de clientes.`;
+    
+    agregarMensajeUsuario(`Estrategia para: ${nombreNegocio}`);
+    ejecutarLlamadaGemini(promptEstrategico);
+}
+
+// Función principal de conexión con Gemini API
+async function ejecutarLlamadaGemini(prompt) {
+    const apiKey = document.getElementById("apiKey").value.trim() || localStorage.getItem("gemini_api_key");
 
     if (!apiKey) {
-        alert("AQ.Ab8RN6LOGPa_guvWSfT8n1VVP-uvX-ARhb-Z_5l1vtV6grrrkg");
+        agregarMensajeIA("⚠️ Falta la API Key de Gemini. Ingrésala en el panel izquierdo y haz clic en 'Guardar Key'.");
         return;
-    }
-
-    if (!textoConsulta) return;
-
-    if (!promptDirecto) {
-        agregarMensajeUsuario(textoConsulta);
-        input.value = "";
     }
 
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
@@ -158,7 +187,7 @@ async function enviarAGemini(promptDirecto = null) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{
-                    parts: [{ text: `Eres un consultor experto en prospección B2B y cierre de ventas. Responde de forma concisa, comercial y profesional a la siguiente consulta: ${textoConsulta}` }]
+                    parts: [{ text: `Eres un consultor experto en ventas B2B. Responde al usuario de forma clara, directa y estructurada: ${prompt}` }]
                 }]
             })
         });
@@ -166,7 +195,7 @@ async function enviarAGemini(promptDirecto = null) {
         const data = await response.json();
 
         if (data.error) {
-            agregarMensajeIA(`⚠️ Error de API: ${data.error.message}`);
+            agregarMensajeIA(`⚠️ Error de Google AI Studio: ${data.error.message}`);
             return;
         }
 
@@ -175,23 +204,15 @@ async function enviarAGemini(promptDirecto = null) {
         reproducirVoz(respuestaTexto);
 
     } catch (error) {
-        agregarMensajeIA("⚠️ No se pudo establecer conexión con la API de Gemini.");
+        console.error("Error Fetch Gemini:", error);
+        agregarMensajeIA("⚠️ Error de conexión de red o API Key inválida.");
     }
 }
 
-function consultarEstrategiaLead(nombreNegocio, tieneWeb) {
-    document.getElementById("agenteContainer").classList.remove("collapsed");
-    const promptEstrategico = `Genera un mensaje directo de WhatsApp de 3 oraciones para prospectar al negocio "${nombreNegocio}". Considera que actualmente su sitio web está reportado como "${tieneWeb}". Enfócate en ofrecerle automatizaciones de atención a clientes e infraestructura digital.`;
-    
-    agregarMensajeUsuario(`Estrategia para: ${nombreNegocio}`);
-    enviarAGemini(promptEstrategico);
-}
-
-// Lectura de Respuesta mediante Voz (Text-to-Speech)
 function reproducirVoz(texto) {
     if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Cancelar lecturas previas
-        const textoLimpio = texto.replace(/[*_#]/g, ''); // Limpiar caracteres markdown
+        window.speechSynthesis.cancel();
+        const textoLimpio = texto.replace(/[*_#]/g, '');
         const locucion = new SpeechSynthesisUtterance(textoLimpio);
         locucion.lang = 'es-MX';
         locucion.rate = 1.0;
@@ -244,7 +265,7 @@ function agregarMensajeIA(texto) {
 }
 
 function handleKeyPress(e) {
-    if (e.key === "Enter") enviarAGemini();
+    if (e.key === "Enter") enviarAGeminiManual();
 }
 
 function toggleChat() {
