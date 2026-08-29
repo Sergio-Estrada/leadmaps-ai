@@ -1,5 +1,5 @@
 // Configuración de la API de Gemini
-const GEMINI_API_KEY = "TU_API_KEY_AQUI"; // Obtén tu API Key gratuita en Google AI Studio
+const GEMINI_API_KEY = "AQ.Ab8RN6LOGPa_guvWSfT8n1VVP-uvX-ARhb-Z_5l1vtV6grrrkg"; // Obtén tu API Key gratuita en Google AI Studio
 
 // Reconocimiento de Voz (Web Speech API)
 const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
