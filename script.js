@@ -1,4 +1,4 @@
-// Clave API de Gemini codificada en Base64 para evitar bloqueos de seguridad en GitHub
+// Clave de API de Gemini (Codificada en Base64 para prevenir bloqueos de GitHub Secret Scanning)
 const _0xkey = "QVEuQWI4Uk42SXZzd0FnYnZDNzVoa2pjdDRpaW9LaHR3Mi01QzNybjd3REZ6MEpsd1lTVXc=";
 
 function obtenerKey() {
@@ -9,8 +9,9 @@ let leadsProcesados = [];
 const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let reconocedor;
 
+// Inicialización de interfaz
 window.addEventListener("DOMContentLoaded", () => {
-    actualizarEstado("✅ Conectado a la API de Gemini.");
+    actualizarEstado("✅ Conectado a la API de Gemini IA.");
     const badge = document.getElementById("statusBadge");
     if (badge) {
         badge.innerText = "🟢 Gemini 2.0 Activo";
@@ -67,7 +68,7 @@ function actualizarEstadoMic(activo) {
     }
 }
 
-// Búsqueda de Leads con OpenStreetMap / Nominatim
+// Búsqueda de Leads vía OpenStreetMap (Nominatim API)
 async function generarLeads() {
     const ciudad = document.getElementById("ciudad").value.trim();
     const categoria = document.getElementById("categoria").value.trim();
@@ -75,7 +76,7 @@ async function generarLeads() {
     const contenedor = document.getElementById("lista-leads");
 
     if (!ciudad || !categoria) {
-        alert("Ingresa la ciudad y la categoría comercial.");
+        alert("Por favor, ingresa la ciudad y el giro comercial.");
         return;
     }
 
@@ -158,7 +159,7 @@ function renderizarTarjetas() {
                 <p><strong>📍 Ubicación:</strong> ${lead.direccion}</p>
                 <p><strong>📞 Teléfono:</strong> ${lead.telefono}</p>
                 <p><strong>🌐 Sitio Web:</strong> ${lead.websiteUrl}</p>
-                <p><strong>🗺️ Google Maps:</strong> <a href="${lead.googleMapsUrl}" target="_blank" style="color: #818cf8; text-decoration: underline;">Ver mapa exacto</a></p>
+                <p><strong>🗺️ Google Maps:</strong> <a href="${lead.googleMapsUrl}" target="_blank" style="color: #818cf8; text-decoration: underline;">Ver ubicación exacta</a></p>
             </div>
             <button class="btn-guru" onclick="consultarEstrategiaLead('${nombreLimpio}', '${lead.websiteUrl}')">✨ Crear Pitch con Gemini</button>
         `;
@@ -166,7 +167,7 @@ function renderizarTarjetas() {
     });
 }
 
-// Llamada directa a Gemini 2.0 Flash / 1.5 Flash
+// Llamada directa a Gemini IA sin intermediarios
 function enviarAGeminiManual() {
     const input = document.getElementById("preguntaAgente");
     const texto = input.value.trim();
@@ -181,7 +182,7 @@ function consultarEstrategiaLead(nombreNegocio, tieneWeb) {
     const agenteContainer = document.getElementById("agenteContainer");
     if (agenteContainer) agenteContainer.classList.remove("collapsed");
 
-    const prompt = `Genera un pitch comercial breve de WhatsApp para prospectar a "${nombreNegocio}". Estado web: "${tieneWeb}". Enfócate en ofrecer desarrollo web y posicionamiento digital.`;
+    const prompt = `Genera un pitch comercial breve de WhatsApp para prospectar a "${nombreNegocio}". Estado web: "${tieneWeb}". Propón una oferta para posicionamiento digital o desarrollo web.`;
     agregarMensajeUsuario(`Pitch para: ${nombreNegocio}`);
     ejecutarLlamadaGemini(prompt);
 }
@@ -199,7 +200,7 @@ async function ejecutarLlamadaGemini(prompt) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{
-                    parts: [{ text: `Eres un consultor experto en ventas B2B. Responde de forma breve y ejecutiva: ${prompt}` }]
+                    parts: [{ text: `Eres un consultor experto en ventas B2B. Responde de forma directa, ejecutiva y en español: ${prompt}` }]
                 }]
             })
         });
@@ -210,7 +211,7 @@ async function ejecutarLlamadaGemini(prompt) {
         const data = await response.json();
 
         if (data.error) {
-            agregarMensajeIA(`⚠️ Error de Google AI Studio: ${data.error.message}`);
+            agregarMensajeIA(`⚠️ Error de la API de Google: ${data.error.message}`);
             return;
         }
 
@@ -226,7 +227,7 @@ async function ejecutarLlamadaGemini(prompt) {
         console.error("Error Fetch:", error);
         const tempMsg = document.querySelector(".msg-temp");
         if (tempMsg) tempMsg.remove();
-        agregarMensajeIA("⚠️ Error de conexión con la API de Gemini.");
+        agregarMensajeIA("⚠️ Error de conexión directa. Revisa tu conexión a internet.");
     }
 }
 
@@ -261,7 +262,7 @@ function exportarCSV() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Leads_B2B_${new Date().toISOString().slice(0,10)}.csv`);
+    link.setAttribute("download", `Leads_Prospectos_${new Date().toISOString().slice(0,10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
