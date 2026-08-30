@@ -3,72 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LeadHunter AI - Prospectador Comercial Gemini</title>
+    <title>Buscador de Leads B2B & Agente Gemini IA</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <header>
-        <div class="header-content">
-            <h1>⚡ LeadHunter AI</h1>
-            <p>Generación de Leads Premium & Asesor IA Comercial en Tiempo Real</p>
-        </div>
+    <header class="navbar">
+        <div class="logo">🚀 Prospector B2B <span>+ Gemini IA</span></div>
+        <div class="status-badge" id="statusBadge">🟡 Conectando...</div>
     </header>
 
-<section class="panel-busqueda">
-            <h2>🔎 Configuración y Búsqueda</h2>
-            <div class="grupo-input">
-                <label for="ciudad">Ubicación / Ciudad:</label>
-                <input type="text" id="ciudad" placeholder="Ej: Tijuana, Tecate, CDMX">
-                
-                <label for="categoria">Categoría Comercial:</label>
-                <input type="text" id="categoria" placeholder="Ej: Talleres, Panaderías, Restaurantes">
+    <main class="contenedor-principal">
+        
+        <!-- PANEL DE BÚSQUEDA -->
+        <aside class="panel-lateral">
+            <section class="card-panel">
+                <h2>🔎 Búsqueda de Prospectos</h2>
+                <p class="subtitle">Escanea negocios locales en tiempo real</p>
 
-                <div class="filtro-opciones">
+                <div class="form-group">
+                    <label for="ciudad">Ubicación / Ciudad:</label>
+                    <input type="text" id="ciudad" placeholder="Ej: Tijuana, Tecate, CDMX" value="Tijuana">
+                </div>
+
+                <div class="form-group">
+                    <label for="categoria">Giro Comercial / Categoría:</label>
+                    <input type="text" id="categoria" placeholder="Ej: Talleres, Panaderías, Panaderias" value="Restaurantes">
+                </div>
+
+                <div class="form-group checkbox-group">
                     <label>
-                        <input type="checkbox" id="filtroSinWeb" checked> Priorizar leads sin sitio web
+                        <input type="checkbox" id="filtroSinWeb" checked>
+                        <span>Priorizar negocios SIN sitio web</span>
                     </label>
                 </div>
-                
-                <button onclick="generarLeads()">🚀 Buscar Prospectos</button>
-            </div>
-            <div id="status" class="status-box">Sistema conectado a Gemini. Listo para buscar.</div>
-        </section>
 
-        <section class="resultados">
+                <button class="btn-primary" onclick="generarLeads()">🚀 Buscar Leads</button>
+                <button class="btn-secondary" onclick="exportarCSV()">📥 Exportar a CSV</button>
+
+                <div id="status" class="status-box">Sistema listo.</div>
+            </section>
+        </aside>
+
+        <!-- LISTA DE RESULTADOS -->
+        <section class="panel-resultados">
             <div class="header-resultados">
-                <h2>🎯 Leads Cualificados (<span id="contadorLeads">0</span>)</h2>
-                <div class="acciones-exportar">
-                    <button onclick="exportarCSV()" class="btn-exportar">📥 Exportar a CSV / Excel</button>
+                <h2>Leads Encontrados (<span id="contadorLeads">0</span>)</h2>
+            </div>
+            
+            <div id="lista-leads" class="grid-leads">
+                <div class="empty-state">
+                    <span>📍</span>
+                    <p>Ingresa una ciudad y categoría comercial para iniciar el escaneo.</p>
                 </div>
             </div>
-            <div id="lista-leads" class="grid-leads">
-                <p class="empty-state">Genera una lista para analizar oportunidades comerciales.</p>
-            </div>
         </section>
+
     </main>
 
-    <!-- Agente Flotante Gemini -->
-    <div class="agente-ia-container" id="agenteContainer">
+    <!-- AGENTE FLOTANTE GEMINI IA -->
+    <div id="agenteContainer" class="agente-flotante collapsed">
         <div class="agente-header" onclick="toggleChat()">
-            <div class="agente-title">
-                <span class="status-dot"></span>
-                <span>✨ Agente Gemini - Asesor Comercial</span>
-            </div>
-            <button class="btn-toggle" id="btnToggleChat">▼</button>
+            <div class="agente-titulo">✨ Agente Comercial Gemini 2.0</div>
+            <button class="btn-toggle">💬</button>
         </div>
-        
-        <div class="agente-body" id="agenteBody">
-            <div class="agente-chat" id="chatGuru">
+
+        <div class="agente-body">
+            <div id="chatGuru" class="chat-box">
                 <div class="msg-ia">
-                    <strong>✨ Gemini IA:</strong> Hola. Escríbeme o pulsa el micrófono para redactar correos, guiones telefónicos o mensajes de ventas.
+                    <strong>✨ Gemini IA:</strong><br>
+                    ¡Hola! Estoy listo para estructurar tus pitches comerciales y estrategias B2B. Selecciona un lead o escríbeme directamente.
                 </div>
             </div>
 
-            <div class="agente-input-area">
-                <input type="text" id="preguntaAgente" placeholder="Escribe o presiona el micrófono..." onkeypress="handleKeyPress(event)">
-                <button onclick="escucharVoz()" id="btnMic" class="btn-mic" title="Hablar por micrófono">🎙️</button>
-                <button onclick="enviarAGeminiManual()" class="btn-enviar">Enviar</button>
+            <div class="chat-input-area">
+                <input type="text" id="preguntaAgente" placeholder="Escribe tu consulta o pide un pitch..." onkeypress="handleKeyPress(event)">
+                <button id="btnMic" onclick="escucharVoz()" title="Entrada de voz">🎙️</button>
+                <button onclick="enviarAGeminiManual()" class="btn-send">Enviar</button>
             </div>
         </div>
     </div>
