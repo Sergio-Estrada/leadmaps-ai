@@ -10,14 +10,14 @@ window.addEventListener("DOMContentLoaded", () => {
         if (inputKey) inputKey.value = savedKey;
         actualizarEstado("✅ API Key de Groq cargada localmente.");
     } else {
-        actualizarEstado("⚠️ Ingresa tu API Key de Groq para activar Llama 3 IA.");
+        actualizarEstado("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");
     }
 });
 
 function guardarApiKey() {
     const key = document.getElementById("apiKey") ? document.getElementById("apiKey").value.trim() : "";
     if (!key) {
-        alert("Ingresa una API Key válida de Groq Cloud.");
+        alert("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");
         return;
     }
     localStorage.setItem("groq_api_key", key);
@@ -192,7 +192,7 @@ async function ejecutarLlamadaIA(prompt) {
     const apiKey = obtenerApiKey();
 
     if (!apiKey) {
-        agregarMensajeIA("⚠️ Ingresa una API Key válida de Groq Cloud para usar la IA.");
+        agregarMensajeIA("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");
         return;
     }
 
