@@ -2,36 +2,10 @@ let leadsProcesados = [];
 const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let reconocedor;
 
-// Cargar API Key desde localStorage al iniciar
+// Inicialización de la interfaz
 window.addEventListener("DOMContentLoaded", () => {
-    const savedKey = localStorage.getItem("groq_api_key");
-    if (savedKey) {
-        const inputKey = document.getElementById("apiKey");
-        if (inputKey) inputKey.value = savedKey;
-        actualizarEstado("✅ API Key de Groq cargada localmente.");
-    } else {
-        actualizarEstado("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");
-    }
+    actualizarEstado("✅ Agente de Estrategia Comercial Local Activo.");
 });
-
-function guardarApiKey() {
-    const key = document.getElementById("apiKey") ? document.getElementById("apiKey").value.trim() : "";
-    if (!key) {
-        alert("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");
-        return;
-    }
-    localStorage.setItem("groq_api_key", key);
-    alert("API Key guardada de forma privada en tu navegador.");
-    actualizarEstado("✅ API Key configurada.");
-}
-
-function obtenerApiKey() {
-    const inputKey = document.getElementById("apiKey");
-    if (inputKey && inputKey.value.trim()) {
-        return inputKey.value.trim();
-    }
-    return localStorage.getItem("groq_api_key") || "";
-}
 
 function actualizarEstado(mensaje) {
     const statusBox = document.getElementById("status");
@@ -162,13 +136,29 @@ function renderizarTarjetas() {
                 <p><strong>🌐 Sitio Web:</strong> ${lead.websiteUrl}</p>
                 <p><strong>🗺️ Google Maps:</strong> <a href="${lead.googleMapsUrl}" target="_blank" style="color: #818cf8; text-decoration: underline;">Ver mapa</a></p>
             </div>
-            <button class="btn-guru" onclick="consultarEstrategiaLead('${nombreLimpio}', '${lead.websiteUrl}')">✨ Crear Pitch con Llama 3</button>
+            <button class="btn-guru" onclick="consultarEstrategiaLead('${nombreLimpio}', ${lead.tieneWeb})">✨ Generar Pitch Local</button>
         `;
         contenedor.appendChild(card);
     });
 }
 
-// Integración con Groq API (Llama 3)
+// Generador de Estrategias y Pitches Local (Sin APIs de pago ni externas)
+function generarEstrategiaLocal(nombreNegocio, tieneWeb) {
+    if (!tieneWeb) {
+        return `🎯 **Estrategia Comercial (Alta Prioridad)**\n\n` +
+               `Hola, me contacto con la dirección de **${nombreNegocio}**.\n\n` +
+               `Estaba revisando empresas en su zona y noté que no cuentan con un sitio web oficial optimizado. Hoy en día, más del 80% de las búsquedas comerciales se realizan en móvil, por lo que están perdiendo clientes frente a competidores directos.\n\n` +
+               `💡 **Propuesta de Valor:** Podríamos desarrollar una landing page de alta conversión para captar prospectos directamente a WhatsApp y Google Maps.\n\n` +
+               `¿Tienen disponibilidad de 5 minutos esta semana para mostrarles una demo rápida?`;
+    } else {
+        return `📈 **Estrategia de Optimización Digital**\n\n` +
+               `Hola, equipo de **${nombreNegocio}**.\n\n` +
+               `Analicé su presencia digital y noté que ya cuentan con plataforma web. Sin embargo, existen oportunidades para acelerar la captación de leads mediante automatizaciones comerciales, integración con CRM y optimización SEO local.\n\n` +
+               `💡 **Propuesta de Valor:** Implementar un asistente de respuestas automáticas y embudos para incrementar el retorno de sus campañas actuales.\n\n` +
+               `¿Cuándo podríamos agendar una breve llamada estratégica de 10 minutos?`;
+    }
+}
+
 function enviarAIA() {
     const input = document.getElementById("preguntaAgente");
     const texto = input.value.trim();
@@ -176,71 +166,26 @@ function enviarAIA() {
 
     agregarMensajeUsuario(texto);
     input.value = "";
-    ejecutarLlamadaIA(texto);
+    
+    // Respuesta analítica local a consultas directas
+    const respuesta = `💡 **Respuesta del Agente Local:**\n\n` +
+                      `Analizando tu consulta: "${texto}"\n\n` +
+                      `* **Recomendación:** Prioriza el contacto directo vía WhatsApp con los prospectos etiquetados como 'SIN WEB'.\n` +
+                      `* **Acción:** Utiliza el generador de pitches en cada tarjeta para personalizar la propuesta comercial antes de enviar.`;
+    
+    agregarMensajeIA(respuesta);
+    reproducirVoz(respuesta);
 }
 
 function consultarEstrategiaLead(nombreNegocio, tieneWeb) {
     const agenteContainer = document.getElementById("agenteContainer");
     if (agenteContainer) agenteContainer.classList.remove("collapsed");
 
-    const prompt = `Genera un pitch comercial de WhatsApp breve para prospectar a "${nombreNegocio}". Estado de sitio web: "${tieneWeb}".`;
     agregarMensajeUsuario(`Pitch para: ${nombreNegocio}`);
-    ejecutarLlamadaIA(prompt);
-}
-
-async function ejecutarLlamadaIA(prompt) {
-    const apiKey = obtenerApiKey();
-
-    if (!apiKey) {
-        agregarMensajeIA("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");
-        return;
-    }
-
-    agregarMensajeIA("⏳ <em>Llama 3 está procesando la solicitud...</em>", "msg-temp");
-
-    const endpoint = "https://api.groq.com/openai/v1/chat/completions";
-
-    try {
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-                model: "llama-3.3-70b-versatile",
-                messages: [
-                    { role: "system", content: "Eres un experto consultor comercial B2B. Responde de forma directa y concisa en español." },
-                    { role: "user", content: prompt }
-                ],
-                temperature: 0.7
-            })
-        });
-
-        const tempMsg = document.querySelector(".msg-temp");
-        if (tempMsg) tempMsg.remove();
-
-        const data = await response.json();
-
-        if (data.error) {
-            agregarMensajeIA(`⚠️ Error de API: ${data.error.message}`);
-            return;
-        }
-
-        if (data.choices && data.choices[0].message.content) {
-            const respuestaTexto = data.choices[0].message.content;
-            agregarMensajeIA(respuestaTexto);
-            reproducirVoz(respuestaTexto);
-        } else {
-            agregarMensajeIA("⚠️ No se recibió una respuesta válida.");
-        }
-
-    } catch (error) {
-        console.error("Error Fetch:", error);
-        const tempMsg = document.querySelector(".msg-temp");
-        if (tempMsg) tempMsg.remove();
-        agregarMensajeIA("⚠️ Error de red al comunicarse con el servidor de IA.");
-    }
+    
+    const pitch = generarEstrategiaLocal(nombreNegocio, tieneWeb);
+    agregarMensajeIA(pitch);
+    reproducirVoz(pitch);
 }
 
 function reproducirVoz(texto) {
@@ -274,7 +219,7 @@ function exportarCSV() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Prospectos_${new Date().toISOString().slice(0,10)}.csv`);
+    link.setAttribute("download", `Leads_Prospectos_${new Date().toISOString().slice(0,10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -295,7 +240,7 @@ function agregarMensajeIA(texto, claseAdicional = "") {
     if (!chat) return;
     const msg = document.createElement("div");
     msg.className = `msg-ia ${claseAdicional}`;
-    msg.innerHTML = `<strong>🤖 Llama 3 IA:</strong><br>${texto.replace(/\n/g, '<br>')}`;
+    msg.innerHTML = `<strong>💼 Agente Local:</strong><br>${texto.replace(/\n/g, '<br>')}`;
     chat.appendChild(msg);
     chat.scrollTop = chat.scrollHeight;
 }
