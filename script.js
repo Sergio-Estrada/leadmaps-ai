@@ -1,312 +1,93 @@
-let leadsProcesados = [];
-const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-let reconocedor;
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
 
-// Cargar la API Key guardada al iniciar
-window.addEventListener("DOMContentLoaded", () => {
-    const savedKey = localStorage.getItem("gemini_api_key");
-    const inputKey = document.getElementById("apiKey");
-    
-    if (savedKey) {
-        if (inputKey) inputKey.value = savedKey;
-        actualizarEstado("✅ API Key de Gemini cargada localmente.");
-    } else {
-        actualizarEstado("⚠️ Ingresa tu API Key de Gemini para activar la IA.");
+const app = express();
+app.use(cors());
+app.use(bodyParser.json());
+
+// CONFIGURACIÓN DE APIS (Coloca tus claves)
+const APIFY_TOKEN = 'TU_APIFY_API_TOKEN'; // Obtener gratis en apify.com
+
+app.post('/api/buscar-leads-premium', async (req, res) => {
+    const { ciudad, categoria, geminiApiKey } = req.body;
+
+    if (!ciudad || !categoria || !geminiApiKey) {
+        return res.status(400).json({ error: 'Faltan parámetros requeridos (ciudad, categoria o geminiApiKey).' });
     }
-});
-
-// Guardar API Key en localStorage
-function guardarApiKey() {
-    const inputKey = document.getElementById("apiKey");
-    const key = inputKey ? inputKey.value.trim() : "";
-    
-    if (!key) {
-        alert("Por favor, ingresa una API Key válida de Google AI Studio.");
-        return;
-    }
-    
-    localStorage.setItem("gemini_api_key", key);
-    alert("API Key guardada correctamente en tu navegador.");
-    actualizarEstado("✅ API Key de Gemini configurada.");
-}
-
-function obtenerApiKey() {
-    const inputKey = document.getElementById("apiKey");
-    if (inputKey && inputKey.value.trim()) {
-        return inputKey.value.trim();
-    }
-    return localStorage.getItem("gemini_api_key") || "";
-}
-
-function actualizarEstado(mensaje) {
-    const statusBox = document.getElementById("status");
-    const statusBadge = document.getElementById("statusBadge");
-    if (statusBox) statusBox.innerText = mensaje;
-    if (statusBadge) {
-        statusBadge.innerText = mensaje.includes("✅") ? "🟢 IA Conectada" : "🔴 Esperando API Key";
-    }
-}
-
-// Reconocimiento de Voz
-if (Recognition) {
-    reconocedor = new Recognition();
-    reconocedor.lang = 'es-MX';
-    reconocedor.continuous = false;
-
-    reconocedor.onresult = (event) => {
-        const textoVoz = event.results[0][0].transcript;
-        const input = document.getElementById("preguntaAgente");
-        if (input) input.value = textoVoz;
-        enviarAGeminiManual();
-    };
-
-    reconocedor.onerror = () => actualizarEstadoMic(false);
-    reconocedor.onend = () => actualizarEstadoMic(false);
-}
-
-function escucharVoz() {
-    if (!reconocedor) return alert("Tu navegador no soporta entrada de voz.");
-    actualizarEstadoMic(true);
-    reconocedor.start();
-}
-
-function actualizarEstadoMic(activo) {
-    const btnMic = document.getElementById("btnMic");
-    if (btnMic) {
-        btnMic.innerText = activo ? "🔴" : "🎙️";
-        btnMic.classList.toggle("escuchando", activo);
-    }
-}
-
-// Búsqueda de Leads mediante OpenStreetMap (Nominatim API)
-async function generarLeads() {
-    const ciudad = document.getElementById("ciudad").value.trim();
-    const categoria = document.getElementById("categoria").value.trim();
-    const soloSinWeb = document.getElementById("filtroSinWeb").checked;
-    const contenedor = document.getElementById("lista-leads");
-
-    if (!ciudad || !categoria) {
-        alert("Ingresa la ciudad y el giro comercial.");
-        return;
-    }
-
-    actualizarEstado(`🔍 Escaneando negocios en ${ciudad}...`);
-    contenedor.innerHTML = "<p class='empty-state'>⏳ Escaneando datos en tiempo real...</p>";
-
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(categoria + " " + ciudad)}&extratags=1&addressdetails=1`;
 
     try {
-        const response = await fetch(url);
-        const resultados = await response.json();
+        console.log(`[1/3] Iniciando rastreo web profundo para ${categoria} en ${ciudad}...`);
 
-        if (!resultados || resultados.length === 0) {
-            actualizarEstado("❌ No se encontraron prospectos.");
-            contenedor.innerHTML = "<p class='empty-state'>Sin resultados. Prueba con otra zona o giro.</p>";
-            document.getElementById("contadorLeads").innerText = "0";
-            return;
-        }
+        // 1. Iniciar Actor de Apify para Scraping de Google Maps & Redes Sociales
+        const apifyUrl = `https://api.apify.com/v2/acts/compass~crawler-google-places/run-sync-get-dataset-items?token=${APIFY_TOKEN}`;
+        
+        const apifyPayload = {
+            searchStringsArray: [`${categoria} en ${ciudad}`],
+            maxCrawledPlacesPerSearch: 10,
+            scrapeSocialMediaProfiles: true // Extrae Facebook, Instagram y WhatsApp
+        };
 
-        leadsProcesados = [];
-
-        resultados.forEach(lugar => {
-            const extra = lugar.extratags || {};
-            const tieneWebsite = Boolean(extra.website || extra["contact:website"]);
-            const nombre = lugar.display_name.split(',')[0];
-            const telefono = extra.phone || extra["contact:phone"] || "No registrado";
-            const direccion = lugar.display_name;
-            const latitud = lugar.lat;
-            const longitud = lugar.lon;
-            const urlGoogleMaps = `https://www.google.com/maps/search/?api=1&query=${latitud},${longitud}`;
-
-            const leadObj = {
-                nombre: nombre,
-                telefono: telefono,
-                direccion: direccion,
-                lat: latitud,
-                lon: longitud,
-                googleMapsUrl: urlGoogleMaps,
-                tieneWeb: tieneWebsite,
-                websiteUrl: tieneWebsite ? (extra.website || extra["contact:website"]) : "Sin sitio web"
-            };
-
-            if (soloSinWeb) {
-                if (!tieneWebsite) leadsProcesados.push(leadObj);
-            } else {
-                leadsProcesados.push(leadObj);
-            }
+        const apifyResponse = await fetch(apifyUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(apifyPayload)
         });
 
-        actualizarEstado(`✅ Búsqueda completada: ${leadsProcesados.length} prospectos.`);
-        document.getElementById("contadorLeads").innerText = leadsProcesados.length;
-        renderizarTarjetas();
+        const rawLeads = await apifyResponse.json();
 
-    } catch (error) {
-        console.error("Error al obtener leads:", error);
-        actualizarEstado("⚠️ Error de conexión con el servicio de mapas.");
-        contenedor.innerHTML = "<p class='empty-state'>Ocurrió un error al buscar prospectos.</p>";
-    }
-}
+        if (!Array.isArray(rawLeads) || rawLeads.length === 0) {
+            return res.json({ leads: [] });
+        }
 
-function renderizarTarjetas() {
-    const contenedor = document.getElementById("lista-leads");
-    contenedor.innerHTML = "";
+        console.log(`[2/3] Procesando ${rawLeads.length} prospectos encontrados...`);
 
-    if (leadsProcesados.length === 0) {
-        contenedor.innerHTML = "<p class='empty-state'>No hay resultados con los filtros seleccionados.</p>";
-        return;
-    }
+        // 2. Formatear y Enriquecer los datos
+        const leadsEnriquecidos = rawLeads.map(item => {
+            const tieneWeb = Boolean(item.website && !item.website.includes('facebook.com') && !item.website.includes('instagram.com'));
+            const whatsapp = item.phone || item.additionalPhones?.[0] || 'No detectado';
+            
+            return {
+                nombre: item.title || 'Sin Nombre',
+                telefono: whatsapp,
+                whatsappUrl: whatsapp !== 'No detectado' ? `https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}` : null,
+                direccion: item.address || `${ciudad}, México`,
+                websiteUrl: item.website || 'Sin sitio web',
+                tieneWeb: tieneWeb,
+                facebook: item.socialMediaProfiles?.facebook || null,
+                instagram: item.socialMediaProfiles?.instagram || null,
+                googleMapsUrl: item.url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.title + ' ' + ciudad)}`
+            };
+        });
 
-    leadsProcesados.forEach((lead, index) => {
-        const card = document.createElement("div");
-        card.className = `tarjeta-lead ${!lead.tieneWeb ? 'premium' : ''}`;
-        
-        card.innerHTML = `
-            <div>
-                <span class="tag-premium">${!lead.tieneWeb ? 'SIN WEB' : 'CON WEB'}</span>
-                <h3>${lead.nombre}</h3>
-                <p><strong>📍 Ubicación:</strong> ${lead.direccion}</p>
-                <p><strong>📞 Teléfono:</strong> ${lead.telefono}</p>
-                <p><strong>🌐 Sitio Web:</strong> ${lead.websiteUrl}</p>
-                <p><strong>🗺️ Google Maps:</strong> <a href="${lead.googleMapsUrl}" target="_blank" style="color: #818cf8; text-decoration: underline;">Ver mapa</a></p>
-            </div>
-            <button class="btn-guru" onclick="consultarEstrategiaLeadByIndex(${index})">✨ Crear Pitch con Gemini</button>
-        `;
-        contenedor.appendChild(card);
-    });
-}
+        // 3. Evaluar Clasificación Premium con Gemini 3.6 Flash
+        console.log(`[3/3] Analizando prospectos con Gemini 3.6 Flash...`);
+        const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${geminiApiKey}`;
 
-function consultarEstrategiaLeadByIndex(index) {
-    const lead = leadsProcesados[index];
-    if (!lead) return;
+        const promptClasificacion = `Analiza estos prospectos comerciales y califica cuáles son "PREMIUM" (Negocios con buena presencia telefónica/social pero SIN sitio web propio o con web obsoleta): ${JSON.stringify(leadsEnriquecidos)}. Devuelve solo el arreglo formateado.`;
 
-    const agenteContainer = document.getElementById("agenteContainer");
-    if (agenteContainer) agenteContainer.classList.remove("collapsed");
-
-    const prompt = `Genera un pitch comercial breve para WhatsApp enfocado en prospectar al negocio "${lead.nombre}". Su estado de sitio web es "${lead.websiteUrl}". Presenta una propuesta directa y profesional en español.`;
-    agregarMensajeUsuario(`Pitch para: ${lead.nombre}`);
-    ejecutarLlamadaGemini(prompt);
-}
-
-// Llamada Directa a Gemini API (Endpoint actualizado)
-async function ejecutarLlamadaGemini(prompt) {
-    const apiKey = obtenerApiKey();
-
-    if (!apiKey) {
-        agregarMensajeIA("⚠️ Ingresa tu API Key de Gemini en el campo superior para activar las respuestas.");
-        return;
-    }
-
-    agregarMensajeIA("⏳ <em>Gemini está redactando la propuesta...</em>", "msg-temp");
-
-    // Endpoint actualizado a gemini-2.5-flash
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-
-    try {
-        const response = await fetch(endpoint, {
+        const geminiRes = await fetch(geminiEndpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                contents: [{
-                    parts: [{ text: `Eres un consultor experto en ventas B2B y estrategias digitales. Responde de forma concisa y profesional en español: ${prompt}` }]
-                }]
+                contents: [{ parts: [{ text: promptClasificacion }] }]
             })
         });
 
-        document.querySelector(".msg-temp")?.remove();
-        const data = await response.json();
+        const geminiData = await geminiRes.json();
 
-        if (data.error) {
-            agregarMensajeIA(`⚠️ Error de API: ${data.error.message}`);
-            return;
-        }
-
-        if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
-            const respuestaTexto = data.candidates[0].content.parts[0].text;
-            agregarMensajeIA(respuestaTexto);
-            reproducirVoz(respuestaTexto);
-        } else {
-            agregarMensajeIA("⚠️ No se recibió una respuesta válida del modelo.");
-        }
+        res.json({
+            leads: leadsEnriquecidos,
+            analisisIA: geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "Análisis completado."
+        });
 
     } catch (error) {
-        console.error("Error Fetch:", error);
-        document.querySelector(".msg-temp")?.remove();
-        agregarMensajeIA("⚠️ Error de conexión con los servidores de Gemini.");
+        console.error('Error en el servidor:', error);
+        res.status(500).json({ error: 'Error interno ejecutando el rastreo web.' });
     }
-}
+});
 
-function enviarAGeminiManual() {
-    const input = document.getElementById("preguntaAgente");
-    const texto = input.value.trim();
-    if (!texto) return;
-
-    agregarMensajeUsuario(texto);
-    input.value = "";
-    ejecutarLlamadaGemini(texto);
-}
-
-function reproducirVoz(texto) {
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const textoLimpio = texto.replace(/[*_#]/g, '');
-        const locucion = new SpeechSynthesisUtterance(textoLimpio);
-        locucion.lang = 'es-MX';
-        window.speechSynthesis.speak(locucion);
-    }
-}
-
-function exportarCSV() {
-    if (leadsProcesados.length === 0) {
-        alert("Genera una lista de prospectos antes de exportar.");
-        return;
-    }
-
-    let csvContent = "data:text/csv;charset=utf-8,Nombre,Telefono,Direccion,Tiene_Web,Sitio_Web,Google_Maps\n";
-
-    leadsProcesados.forEach(lead => {
-        const nombreClean = `"${lead.nombre.replace(/"/g, '""')}"`;
-        const telClean = `"${lead.telefono}"`;
-        const dirClean = `"${lead.direccion.replace(/"/g, '""')}"`;
-        const webClean = `"${lead.websiteUrl}"`;
-        const mapsClean = `"${lead.googleMapsUrl}"`;
-        
-        csvContent += `${nombreClean},${telClean},${dirClean},${lead.tieneWeb ? 'SI' : 'NO'},${webClean},${mapsClean}\n`;
-    });
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Prospectos_${new Date().toISOString().slice(0,10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-function agregarMensajeUsuario(texto) {
-    const chat = document.getElementById("chatGuru");
-    if (!chat) return;
-    const msg = document.createElement("div");
-    msg.className = "msg-user";
-    msg.innerText = texto;
-    chat.appendChild(msg);
-    chat.scrollTop = chat.scrollHeight;
-}
-
-function agregarMensajeIA(texto, claseAdicional = "") {
-    const chat = document.getElementById("chatGuru");
-    if (!chat) return;
-    const msg = document.createElement("div");
-    msg.className = `msg-ia ${claseAdicional}`;
-    msg.innerHTML = `<strong>✨ Gemini IA:</strong><br>${texto.replace(/\n/g, '<br>')}`;
-    chat.appendChild(msg);
-    chat.scrollTop = chat.scrollHeight;
-}
-
-function handleKeyPress(e) {
-    if (e.key === "Enter") enviarAGeminiManual();
-}
-
-function toggleChat() {
-    const agente = document.getElementById("agenteContainer");
-    if (agente) agente.classList.toggle("collapsed");
-}
+const PORT = 3000;
+app.listen(PORT, () => {
+    console.log(`🚀 Servidor Rastreador B2B corriendo en http://localhost:${PORT}`);
+});
