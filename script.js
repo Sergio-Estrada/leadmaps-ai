@@ -2,10 +2,41 @@ let leadsProcesados = [];
 const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let reconocedor;
 
-// Inicialización de la interfaz
+// Cargar la API Key guardada al iniciar
 window.addEventListener("DOMContentLoaded", () => {
-    actualizarEstado("✅ Agente de Estrategia Comercial Local Activo.");
+    const savedKey = localStorage.getItem("gemini_api_key");
+    const inputKey = document.getElementById("apiKey");
+    
+    if (savedKey) {
+        if (inputKey) inputKey.value = savedKey;
+        actualizarEstado("✅ API Key de Gemini cargada localmente.");
+    } else {
+        actualizarEstado("⚠️ Ingresa tu API Key de Gemini para activar la IA.");
+    }
 });
+
+// Función para guardar la API Key desde un botón o campo en la página
+function guardarApiKey() {
+    const inputKey = document.getElementById("apiKey");
+    const key = inputKey ? inputKey.value.trim() : "";
+    
+    if (!key) {
+        alert("Por favor, ingresa una API Key válida de Google AI Studio.");
+        return;
+    }
+    
+    localStorage.setItem("gemini_api_key", key);
+    alert("API Key guardada correctamente en tu navegador.");
+    actualizarEstado("✅ API Key de Gemini configurada.");
+}
+
+function obtenerApiKey() {
+    const inputKey = document.getElementById("apiKey");
+    if (inputKey && inputKey.value.trim()) {
+        return inputKey.value.trim();
+    }
+    return localStorage.getItem("gemini_api_key") || "";
+}
 
 function actualizarEstado(mensaje) {
     const statusBox = document.getElementById("status");
@@ -22,7 +53,7 @@ if (Recognition) {
         const textoVoz = event.results[0][0].transcript;
         const input = document.getElementById("preguntaAgente");
         if (input) input.value = textoVoz;
-        enviarAIA();
+        enviarAGeminiManual();
     };
 
     reconocedor.onerror = () => actualizarEstadoMic(false);
@@ -136,56 +167,76 @@ function renderizarTarjetas() {
                 <p><strong>🌐 Sitio Web:</strong> ${lead.websiteUrl}</p>
                 <p><strong>🗺️ Google Maps:</strong> <a href="${lead.googleMapsUrl}" target="_blank" style="color: #818cf8; text-decoration: underline;">Ver mapa</a></p>
             </div>
-            <button class="btn-guru" onclick="consultarEstrategiaLead('${nombreLimpio}', ${lead.tieneWeb})">✨ Generar Pitch Local</button>
+            <button class="btn-guru" onclick="consultarEstrategiaLead('${nombreLimpio}', '${lead.websiteUrl}')">✨ Crear Pitch con Gemini</button>
         `;
         contenedor.appendChild(card);
     });
 }
 
-// Generador de Estrategias y Pitches Local (Sin APIs de pago ni externas)
-function generarEstrategiaLocal(nombreNegocio, tieneWeb) {
-    if (!tieneWeb) {
-        return `🎯 **Estrategia Comercial (Alta Prioridad)**\n\n` +
-               `Hola, me contacto con la dirección de **${nombreNegocio}**.\n\n` +
-               `Estaba revisando empresas en su zona y noté que no cuentan con un sitio web oficial optimizado. Hoy en día, más del 80% de las búsquedas comerciales se realizan en móvil, por lo que están perdiendo clientes frente a competidores directos.\n\n` +
-               `💡 **Propuesta de Valor:** Podríamos desarrollar una landing page de alta conversión para captar prospectos directamente a WhatsApp y Google Maps.\n\n` +
-               `¿Tienen disponibilidad de 5 minutos esta semana para mostrarles una demo rápida?`;
-    } else {
-        return `📈 **Estrategia de Optimización Digital**\n\n` +
-               `Hola, equipo de **${nombreNegocio}**.\n\n` +
-               `Analicé su presencia digital y noté que ya cuentan con plataforma web. Sin embargo, existen oportunidades para acelerar la captación de leads mediante automatizaciones comerciales, integración con CRM y optimización SEO local.\n\n` +
-               `💡 **Propuesta de Valor:** Implementar un asistente de respuestas automáticas y embudos para incrementar el retorno de sus campañas actuales.\n\n` +
-               `¿Cuándo podríamos agendar una breve llamada estratégica de 10 minutos?`;
-    }
-}
-
-function enviarAIA() {
+// Integración con la API de Google Gemini (Llamada Directa)
+function enviarAGeminiManual() {
     const input = document.getElementById("preguntaAgente");
     const texto = input.value.trim();
     if (!texto) return;
 
     agregarMensajeUsuario(texto);
     input.value = "";
-    
-    // Respuesta analítica local a consultas directas
-    const respuesta = `💡 **Respuesta del Agente Local:**\n\n` +
-                      `Analizando tu consulta: "${texto}"\n\n` +
-                      `* **Recomendación:** Prioriza el contacto directo vía WhatsApp con los prospectos etiquetados como 'SIN WEB'.\n` +
-                      `* **Acción:** Utiliza el generador de pitches en cada tarjeta para personalizar la propuesta comercial antes de enviar.`;
-    
-    agregarMensajeIA(respuesta);
-    reproducirVoz(respuesta);
+    ejecutarLlamadaGemini(texto);
 }
 
 function consultarEstrategiaLead(nombreNegocio, tieneWeb) {
     const agenteContainer = document.getElementById("agenteContainer");
     if (agenteContainer) agenteContainer.classList.remove("collapsed");
 
+    const prompt = `Genera un pitch comercial de WhatsApp breve para prospectar a "${nombreNegocio}". Estado de sitio web: "${tieneWeb}". Propón una oferta atractiva en español.`;
     agregarMensajeUsuario(`Pitch para: ${nombreNegocio}`);
-    
-    const pitch = generarEstrategiaLocal(nombreNegocio, tieneWeb);
-    agregarMensajeIA(pitch);
-    reproducirVoz(pitch);
+    ejecutarLlamadaGemini(prompt);
+}
+
+async function ejecutarLlamadaGemini(prompt) {
+    const apiKey = obtenerApiKey();
+
+    if (!apiKey) {
+        agregarMensajeIA("⚠️ Ingresa tu API Key de Gemini en el campo de la página para activar las respuestas.");
+        return;
+    }
+
+    agregarMensajeIA("⏳ <em>Gemini está redactando la propuesta...</em>", "msg-temp");
+
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+    try {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{ text: `Eres un consultor experto en ventas B2B y estrategias digitales. Responde de forma concisa y profesional en español: ${prompt}` }]
+                }]
+            })
+        });
+
+        document.querySelector(".msg-temp")?.remove();
+        const data = await response.json();
+
+        if (data.error) {
+            agregarMensajeIA(`⚠️ Error de autenticación/API: ${data.error.message}`);
+            return;
+        }
+
+        if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+            const respuestaTexto = data.candidates[0].content.parts[0].text;
+            agregarMensajeIA(respuestaTexto);
+            reproducirVoz(respuestaTexto);
+        } else {
+            agregarMensajeIA("⚠️ No se recibió una respuesta válida del modelo.");
+        }
+
+    } catch (error) {
+        console.error("Error Fetch:", error);
+        document.querySelector(".msg-temp")?.remove();
+        agregarMensajeIA("⚠️ Error de conexión con los servidores de Gemini.");
+    }
 }
 
 function reproducirVoz(texto) {
@@ -219,7 +270,7 @@ function exportarCSV() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Leads_Prospectos_${new Date().toISOString().slice(0,10)}.csv`);
+    link.setAttribute("download", `Prospectos_${new Date().toISOString().slice(0,10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -240,13 +291,13 @@ function agregarMensajeIA(texto, claseAdicional = "") {
     if (!chat) return;
     const msg = document.createElement("div");
     msg.className = `msg-ia ${claseAdicional}`;
-    msg.innerHTML = `<strong>💼 Agente Local:</strong><br>${texto.replace(/\n/g, '<br>')}`;
+    msg.innerHTML = `<strong>✨ Gemini IA:</strong><br>${texto.replace(/\n/g, '<br>')}`;
     chat.appendChild(msg);
     chat.scrollTop = chat.scrollHeight;
 }
 
 function handleKeyPress(e) {
-    if (e.key === "Enter") enviarAIA();
+    if (e.key === "Enter") enviarAGeminiManual();
 }
 
 function toggleChat() {
