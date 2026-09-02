@@ -15,7 +15,7 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-// Función para guardar la API Key desde un botón o campo en la página
+// Guardar API Key en localStorage
 function guardarApiKey() {
     const inputKey = document.getElementById("apiKey");
     const key = inputKey ? inputKey.value.trim() : "";
@@ -40,10 +40,14 @@ function obtenerApiKey() {
 
 function actualizarEstado(mensaje) {
     const statusBox = document.getElementById("status");
+    const statusBadge = document.getElementById("statusBadge");
     if (statusBox) statusBox.innerText = mensaje;
+    if (statusBadge) {
+        statusBadge.innerText = mensaje.includes("✅") ? "🟢 IA Conectada" : "🔴 Esperando API Key";
+    }
 }
 
-// Configuración de Reconocimiento de Voz
+// Reconocimiento de Voz
 if (Recognition) {
     reconocedor = new Recognition();
     reconocedor.lang = 'es-MX';
@@ -152,11 +156,9 @@ function renderizarTarjetas() {
         return;
     }
 
-    leadsProcesados.forEach(lead => {
+    leadsProcesados.forEach((lead, index) => {
         const card = document.createElement("div");
         card.className = `tarjeta-lead ${!lead.tieneWeb ? 'premium' : ''}`;
-        
-        const nombreLimpio = lead.nombre.replace(/'/g, "\\'").replace(/"/g, '&quot;');
         
         card.innerHTML = `
             <div>
@@ -167,37 +169,30 @@ function renderizarTarjetas() {
                 <p><strong>🌐 Sitio Web:</strong> ${lead.websiteUrl}</p>
                 <p><strong>🗺️ Google Maps:</strong> <a href="${lead.googleMapsUrl}" target="_blank" style="color: #818cf8; text-decoration: underline;">Ver mapa</a></p>
             </div>
-            <button class="btn-guru" onclick="consultarEstrategiaLead('${nombreLimpio}', '${lead.websiteUrl}')">✨ Crear Pitch con Gemini</button>
+            <button class="btn-guru" onclick="consultarEstrategiaLeadByIndex(${index})">✨ Crear Pitch con Gemini</button>
         `;
         contenedor.appendChild(card);
     });
 }
 
-// Integración con la API de Google Gemini (Llamada Directa)
-function enviarAGeminiManual() {
-    const input = document.getElementById("preguntaAgente");
-    const texto = input.value.trim();
-    if (!texto) return;
+function consultarEstrategiaLeadByIndex(index) {
+    const lead = leadsProcesados[index];
+    if (!lead) return;
 
-    agregarMensajeUsuario(texto);
-    input.value = "";
-    ejecutarLlamadaGemini(texto);
-}
-
-function consultarEstrategiaLead(nombreNegocio, tieneWeb) {
     const agenteContainer = document.getElementById("agenteContainer");
     if (agenteContainer) agenteContainer.classList.remove("collapsed");
 
-    const prompt = `Genera un pitch comercial de WhatsApp breve para prospectar a "${nombreNegocio}". Estado de sitio web: "${tieneWeb}". Propón una oferta atractiva en español.`;
-    agregarMensajeUsuario(`Pitch para: ${nombreNegocio}`);
+    const prompt = `Genera un pitch comercial breve para WhatsApp enfocado en prospectar al negocio "${lead.nombre}". Su estado de sitio web es "${lead.websiteUrl}". Presenta una propuesta directa y profesional en español.`;
+    agregarMensajeUsuario(`Pitch para: ${lead.nombre}`);
     ejecutarLlamadaGemini(prompt);
 }
 
+// Llamada Directa a Gemini API
 async function ejecutarLlamadaGemini(prompt) {
     const apiKey = obtenerApiKey();
 
     if (!apiKey) {
-        agregarMensajeIA("⚠️ Ingresa tu API Key de Gemini en el campo de la página para activar las respuestas.");
+        agregarMensajeIA("⚠️ Ingresa tu API Key de Gemini en el campo superior para activar las respuestas.");
         return;
     }
 
@@ -220,7 +215,7 @@ async function ejecutarLlamadaGemini(prompt) {
         const data = await response.json();
 
         if (data.error) {
-            agregarMensajeIA(`⚠️ Error de autenticación/API: ${data.error.message}`);
+            agregarMensajeIA(`⚠️ Error de API: ${data.error.message}`);
             return;
         }
 
@@ -237,6 +232,16 @@ async function ejecutarLlamadaGemini(prompt) {
         document.querySelector(".msg-temp")?.remove();
         agregarMensajeIA("⚠️ Error de conexión con los servidores de Gemini.");
     }
+}
+
+function enviarAGeminiManual() {
+    const input = document.getElementById("preguntaAgente");
+    const texto = input.value.trim();
+    if (!texto) return;
+
+    agregarMensajeUsuario(texto);
+    input.value = "";
+    ejecutarLlamadaGemini(texto);
 }
 
 function reproducirVoz(texto) {
