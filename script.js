@@ -187,7 +187,7 @@ function consultarEstrategiaLeadByIndex(index) {
     ejecutarLlamadaGemini(prompt);
 }
 
-// Llamada Directa a Gemini API
+// Llamada Directa a Gemini API (Endpoint actualizado)
 async function ejecutarLlamadaGemini(prompt) {
     const apiKey = obtenerApiKey();
 
@@ -198,7 +198,8 @@ async function ejecutarLlamadaGemini(prompt) {
 
     agregarMensajeIA("⏳ <em>Gemini está redactando la propuesta...</em>", "msg-temp");
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    // Endpoint actualizado a gemini-2.5-flash
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
     try {
         const response = await fetch(endpoint, {
