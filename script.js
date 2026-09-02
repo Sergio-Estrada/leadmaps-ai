@@ -1,93 +1,192 @@
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
+let leadsProcesados = [];
+const SERVER_URL = "http://localhost:3000/api/buscar-leads-premium";
 
-const app = express();
-app.use(cors());
-app.use(bodyParser.json());
+window.addEventListener("DOMContentLoaded", () => {
+    const savedKey = localStorage.getItem("gemini_api_key");
+    const inputKey = document.getElementById("apiKey");
+    
+    if (savedKey) {
+        if (inputKey) inputKey.value = savedKey;
+        actualizarEstado("✅ API Key de Gemini configurada.");
+    } else {
+        actualizarEstado("⚠️ Ingresa tu API Key de Gemini para activar la IA.");
+    }
+});
 
-// CONFIGURACIÓN DE APIS (Coloca tus claves)
-const APIFY_TOKEN = 'TU_APIFY_API_TOKEN'; // Obtener gratis en apify.com
+function guardarApiKey() {
+    const inputKey = document.getElementById("apiKey");
+    const key = inputKey ? inputKey.value.trim() : "";
+    
+    if (!key) {
+        alert("Ingresa una API Key válida.");
+        return;
+    }
+    
+    localStorage.setItem("gemini_api_key", key);
+    alert("API Key guardada correctamente.");
+    actualizarEstado("✅ API Key de Gemini configurada.");
+}
 
-app.post('/api/buscar-leads-premium', async (req, res) => {
-    const { ciudad, categoria, geminiApiKey } = req.body;
+function obtenerApiKey() {
+    const inputKey = document.getElementById("apiKey");
+    return (inputKey && inputKey.value.trim()) || localStorage.getItem("gemini_api_key") || "";
+}
 
-    if (!ciudad || !categoria || !geminiApiKey) {
-        return res.status(400).json({ error: 'Faltan parámetros requeridos (ciudad, categoria o geminiApiKey).' });
+function actualizarEstado(mensaje) {
+    const statusBox = document.getElementById("status");
+    const statusBadge = document.getElementById("statusBadge");
+    if (statusBox) statusBox.innerText = mensaje;
+    if (statusBadge) {
+        statusBadge.innerText = mensaje.includes("✅") ? "🟢 IA & Rastreador Listo" : "🔴 Esperando Configuración";
+    }
+}
+
+async function generarLeads() {
+    const ciudad = document.getElementById("ciudad").value.trim();
+    const categoria = document.getElementById("categoria").value.trim();
+    const soloSinWeb = document.getElementById("filtroSinWeb").checked;
+    const apiKey = obtenerApiKey();
+    const contenedor = document.getElementById("lista-leads");
+
+    if (!ciudad || !categoria) {
+        alert("Ingresa la ciudad y el giro comercial.");
+        return;
     }
 
+    if (!apiKey) {
+        alert("Ingresa tu API Key de Gemini antes de rastrear.");
+        return;
+    }
+
+    actualizarEstado(`🕷️ Escaneando la web y redes sociales en ${ciudad}...`);
+    contenedor.innerHTML = "<p class='empty-state'>⏳ Extrayendo números de WhatsApp, perfiles sociales y sitios web...</p>";
+
     try {
-        console.log(`[1/3] Iniciando rastreo web profundo para ${categoria} en ${ciudad}...`);
-
-        // 1. Iniciar Actor de Apify para Scraping de Google Maps & Redes Sociales
-        const apifyUrl = `https://api.apify.com/v2/acts/compass~crawler-google-places/run-sync-get-dataset-items?token=${APIFY_TOKEN}`;
-        
-        const apifyPayload = {
-            searchStringsArray: [`${categoria} en ${ciudad}`],
-            maxCrawledPlacesPerSearch: 10,
-            scrapeSocialMediaProfiles: true // Extrae Facebook, Instagram y WhatsApp
-        };
-
-        const apifyResponse = await fetch(apifyUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(apifyPayload)
-        });
-
-        const rawLeads = await apifyResponse.json();
-
-        if (!Array.isArray(rawLeads) || rawLeads.length === 0) {
-            return res.json({ leads: [] });
-        }
-
-        console.log(`[2/3] Procesando ${rawLeads.length} prospectos encontrados...`);
-
-        // 2. Formatear y Enriquecer los datos
-        const leadsEnriquecidos = rawLeads.map(item => {
-            const tieneWeb = Boolean(item.website && !item.website.includes('facebook.com') && !item.website.includes('instagram.com'));
-            const whatsapp = item.phone || item.additionalPhones?.[0] || 'No detectado';
-            
-            return {
-                nombre: item.title || 'Sin Nombre',
-                telefono: whatsapp,
-                whatsappUrl: whatsapp !== 'No detectado' ? `https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}` : null,
-                direccion: item.address || `${ciudad}, México`,
-                websiteUrl: item.website || 'Sin sitio web',
-                tieneWeb: tieneWeb,
-                facebook: item.socialMediaProfiles?.facebook || null,
-                instagram: item.socialMediaProfiles?.instagram || null,
-                googleMapsUrl: item.url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.title + ' ' + ciudad)}`
-            };
-        });
-
-        // 3. Evaluar Clasificación Premium con Gemini 3.6 Flash
-        console.log(`[3/3] Analizando prospectos con Gemini 3.6 Flash...`);
-        const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${geminiApiKey}`;
-
-        const promptClasificacion = `Analiza estos prospectos comerciales y califica cuáles son "PREMIUM" (Negocios con buena presencia telefónica/social pero SIN sitio web propio o con web obsoleta): ${JSON.stringify(leadsEnriquecidos)}. Devuelve solo el arreglo formateado.`;
-
-        const geminiRes = await fetch(geminiEndpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+        const response = await fetch(SERVER_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                contents: [{ parts: [{ text: promptClasificacion }] }]
+                ciudad: ciudad,
+                categoria: categoria,
+                geminiApiKey: apiKey
             })
         });
 
-        const geminiData = await geminiRes.json();
+        const data = await response.json();
 
-        res.json({
-            leads: leadsEnriquecidos,
-            analisisIA: geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "Análisis completado."
-        });
+        if (!data.leads || data.leads.length === 0) {
+            actualizarEstado("❌ No se encontraron prospectos.");
+            contenedor.innerHTML = "<p class='empty-state'>Sin resultados. Intenta con otra ubicación o sector.</p>";
+            document.getElementById("contadorLeads").innerText = "0";
+            return;
+        }
+
+        leadsProcesados = soloSinWeb ? data.leads.filter(l => !l.tieneWeb) : data.leads;
+
+        actualizarEstado(`✅ Búsqueda finalizada: ${leadsProcesados.length} prospectos Premium procesados.`);
+        document.getElementById("contadorLeads").innerText = leadsProcesados.length;
+        renderizarTarjetas();
 
     } catch (error) {
-        console.error('Error en el servidor:', error);
-        res.status(500).json({ error: 'Error interno ejecutando el rastreo web.' });
+        console.error("Error al rastrear datos:", error);
+        actualizarEstado("⚠️ Error al conectar con el servidor local. Asegúrate de ejecutar server.js.");
+        contenedor.innerHTML = "<p class='empty-state'>Error de conexión con el backend de rastreo.</p>";
     }
-});
+}
 
-const PORT = 3000;
-app.listen(PORT, () => {
-    console.log(`🚀 Servidor Rastreador B2B corriendo en http://localhost:${PORT}`);
-});
+function renderizarTarjetas() {
+    const contenedor = document.getElementById("lista-leads");
+    contenedor.innerHTML = "";
+
+    leadsProcesados.forEach((lead, index) => {
+        const card = document.createElement("div");
+        card.className = `tarjeta-lead ${!lead.tieneWeb ? 'premium' : ''}`;
+        
+        card.innerHTML = `
+            <div>
+                <span class="tag-premium">${!lead.tieneWeb ? '🔥 PROSPECTO PREMIUM (SIN WEB)' : 'CON SITIO WEB'}</span>
+                <h3>${lead.nombre}</h3>
+                <p><strong>📍 Ubicación:</strong> ${lead.direccion}</p>
+                <p><strong>📞 Teléfono:</strong> ${lead.telefono}</p>
+                <p><strong>🌐 Sitio Web:</strong> ${lead.websiteUrl}</p>
+                <p><strong>💬 WhatsApp Directo:</strong> ${lead.whatsappUrl ? `<a href="${lead.whatsappUrl}" target="_blank" style="color:#10b981; font-weight:bold;">Abrir Chat WA</a>` : 'No detectado'}</p>
+                <p><strong>📱 Redes Sociales:</strong> 
+                    ${lead.facebook ? `<a href="${lead.facebook}" target="_blank" style="color:#818cf8; margin-right:8px;">Facebook</a>` : ''}
+                    ${lead.instagram ? `<a href="${lead.instagram}" target="_blank" style="color:#818cf8;">Instagram</a>` : ''}
+                    ${!lead.facebook && !lead.instagram ? 'No vinculadas' : ''}
+                </p>
+            </div>
+            <button class="btn-guru" onclick="consultarEstrategiaLeadByIndex(${index})">✨ Crear Pitch Comercial con Gemini 3.6</button>
+        `;
+        contenedor.appendChild(card);
+    });
+}
+
+function consultarEstrategiaLeadByIndex(index) {
+    const lead = leadsProcesados[index];
+    if (!lead) return;
+
+    const agenteContainer = document.getElementById("agenteContainer");
+    if (agenteContainer) agenteContainer.classList.remove("collapsed");
+
+    const prompt = `Genera una propuesta comercial persuasiva de WhatsApp para el negocio "${lead.nombre}". Redes sociales: FB (${lead.facebook || 'No'}), IG (${lead.instagram || 'No'}). Sitio Web: ${lead.websiteUrl}. Enfócate en venderle su sitio web y automatización de prospectos.`;
+    
+    agregarMensajeUsuario(`Pitch para: ${lead.nombre}`);
+    ejecutarLlamadaGemini(prompt);
+}
+
+async function ejecutarLlamadaGemini(prompt) {
+    const apiKey = obtenerApiKey();
+    if (!apiKey) return;
+
+    agregarMensajeIA("⏳ <em>Gemini 3.6 Flash analizando la propuesta...</em>", "msg-temp");
+
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
+
+    try {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: `Eres un estratega B2B experto. Responde en español: ${prompt}` }] }]
+            })
+        });
+
+        document.querySelector(".msg-temp")?.remove();
+        const data = await response.json();
+
+        if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+            agregarMensajeIA(data.candidates[0].content.parts[0].text);
+        } else {
+            agregarMensajeIA("⚠️ Error procesando la respuesta con Gemini 3.6.");
+        }
+    } catch (e) {
+        document.querySelector(".msg-temp")?.remove();
+        agregarMensajeIA("⚠️ Error de conexión con Gemini API.");
+    }
+}
+
+function agregarMensajeUsuario(texto) {
+    const chat = document.getElementById("chatGuru");
+    if (!chat) return;
+    const msg = document.createElement("div");
+    msg.className = "msg-user";
+    msg.innerText = texto;
+    chat.appendChild(msg);
+    chat.scrollTop = chat.scrollHeight;
+}
+
+function agregarMensajeIA(texto, claseAdicional = "") {
+    const chat = document.getElementById("chatGuru");
+    if (!chat) return;
+    const msg = document.createElement("div");
+    msg.className = `msg-ia ${claseAdicional}`;
+    msg.innerHTML = `<strong>✨ Gemini IA:</strong><br>${texto.replace(/\n/g, '<br>')}`;
+    chat.appendChild(msg);
+    chat.scrollTop = chat.scrollHeight;
+}
+
+function toggleChat() {
+    const agente = document.getElementById("agenteContainer");
+    if (agente) agente.classList.toggle("collapsed");
+}
