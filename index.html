@@ -3,24 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prospección B2B & Agente Gemini IA</title>
+    <title>Prospector B2B Web & Social Extractor</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <header class="main-header">
-        <h1>🚀 Prospector B2B & Asistente Gemini IA</h1>
-        <div id="statusBadge" class="badge">⚪ Estado: Pendiente de Configuración</div>
+        <h1>🚀 Prospector B2B Premium & Gemini 3.6 Flash</h1>
+        <div id="statusBadge" class="badge">⚪ Estado: Pendiente</div>
     </header>
 
     <main class="container">
         
-        <!-- CONFIGURACIÓN API KEY -->
+        <!-- ACCESO GEMINI 3.6 -->
         <section class="card config-card">
-            <h2>🔑 Configuración de Acceso IA</h2>
-            <p class="description">
-                Ingresa tu API Key de Google AI Studio. Se guardará de forma privada en el almacenamiento local de tu navegador (<code>localStorage</code>).
-            </p>
+            <h2>🔑 Configuración Gemini 3.6 Flash API</h2>
             <div class="api-key-container">
                 <input type="password" id="apiKey" placeholder="Pega tu Gemini API Key aquí (AIzaSy...)" autocomplete="off" />
                 <button type="button" class="btn-primary" onclick="guardarApiKey()">Guardar Clave</button>
@@ -30,7 +27,7 @@
 
         <!-- FILTROS DE BÚSQUEDA -->
         <section class="card search-card">
-            <h2>🔍 Búsqueda de Prospectos Comerciales</h2>
+            <h2>🔍 Búsqueda de Prospectos Comerciales (Web + Redes Sociales)</h2>
             <div class="inputs-busqueda">
                 <div class="form-group">
                     <label for="ciudad">Ciudad / Ubicación:</label>
@@ -39,19 +36,18 @@
 
                 <div class="form-group">
                     <label for="categoria">Giro Comercial / Sector:</label>
-                    <input type="text" id="categoria" placeholder="Ej. Restaurantes, Paneles Solares" />
+                    <input type="text" id="categoria" placeholder="Ej. Paneles Solares, Restaurantes" />
                 </div>
 
                 <div class="form-group checkbox-group">
                     <label>
                         <input type="checkbox" id="filtroSinWeb" />
-                        <span>Filtrar solo negocios SIN sitio web</span>
+                        <span>Mostrar únicamente prospectos SIN sitio web (Premium)</span>
                     </label>
                 </div>
 
                 <div class="action-buttons">
-                    <button type="button" class="btn-success" onclick="generarLeads()">Buscar Prospectos</button>
-                    <button type="button" class="btn-secondary" onclick="exportarCSV()">Exportar a CSV</button>
+                    <button type="button" class="btn-success" onclick="generarLeads()">🕷️ Extraer WhatsApps & Redes</button>
                 </div>
             </div>
         </section>
@@ -62,31 +58,23 @@
                 <h2>📋 Prospectos Encontrados (<span id="contadorLeads">0</span>)</h2>
             </div>
             <div id="lista-leads" class="grid-leads">
-                <p class="empty-state">Ingresa una ciudad y un giro comercial para iniciar la búsqueda.</p>
+                <p class="empty-state">Ingresa una ciudad y un giro para iniciar la extracción web profunda.</p>
             </div>
         </section>
 
     </main>
 
-    <!-- AGENTE CHAT FLOTANTE GEMINI -->
+    <!-- AGENTE FLOTANTE GEMINI -->
     <aside id="agenteContainer" class="agente-flotante collapsed">
         <div class="chat-header" onclick="toggleChat()">
-            <span>✨ Agente Comercial Gemini IA</span>
+            <span>✨ Agente Comercial Gemini 3.6</span>
             <button class="btn-toggle">💬</button>
         </div>
 
         <div id="chatGuru" class="chat-body">
             <div class="msg-ia">
                 <strong>✨ Gemini IA:</strong><br>
-                ¡Hola! Selecciona un prospecto para generar su pitch comercial o escribe una consulta directamente.
-            </div>
-        </div>
-
-        <div class="chat-footer">
-            <div class="chat-input-wrapper">
-                <input type="text" id="preguntaAgente" placeholder="Escribe tu consulta comercial..." onkeypress="handleKeyPress(event)" />
-                <button type="button" id="btnMic" onclick="escucharVoz()" title="Dictar por voz">🎙️</button>
-                <button type="button" onclick="enviarAGeminiManual()" class="btn-send">Enviar</button>
+                Selecciona un prospecto para redactar un pitch comercial de alta conversión para WhatsApp.
             </div>
         </div>
     </aside>
