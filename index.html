@@ -15,11 +15,11 @@
 
     <main class="container">
         
-        <!-- PANEL 1: Configuración de API Key de Gemini -->
+        <!-- CONFIGURACIÓN API KEY -->
         <section class="card config-card">
             <h2>🔑 Configuración de Acceso IA</h2>
             <p class="description">
-                Ingresa tu API Key de Google AI Studio. Se guardará de forma privada en el almacenamiento local de tu navegador (<code>localStorage</code>) para que no tengas que exponerla en el código.
+                Ingresa tu API Key de Google AI Studio. Se guardará de forma privada en el almacenamiento local de tu navegador (<code>localStorage</code>).
             </p>
             <div class="api-key-container">
                 <input type="password" id="apiKey" placeholder="Pega tu Gemini API Key aquí (AIzaSy...)" autocomplete="off" />
@@ -28,7 +28,7 @@
             <div id="status" class="status-message">Esperando clave de acceso...</div>
         </section>
 
-        <!-- PANEL 2: Filtros de Búsqueda de Prospectos -->
+        <!-- FILTROS DE BÚSQUEDA -->
         <section class="card search-card">
             <h2>🔍 Búsqueda de Prospectos Comerciales</h2>
             <div class="inputs-busqueda">
@@ -56,7 +56,7 @@
             </div>
         </section>
 
-        <!-- PANEL 3: Resultados de Búsqueda -->
+        <!-- RESULTADOS -->
         <section class="card results-card">
             <div class="results-header">
                 <h2>📋 Prospectos Encontrados (<span id="contadorLeads">0</span>)</h2>
@@ -68,7 +68,7 @@
 
     </main>
 
-    <!-- PANEL 4: Agente Flotante Gemini IA -->
+    <!-- AGENTE CHAT FLOTANTE GEMINI -->
     <aside id="agenteContainer" class="agente-flotante collapsed">
         <div class="chat-header" onclick="toggleChat()">
             <span>✨ Agente Comercial Gemini IA</span>
